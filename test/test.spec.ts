@@ -1,10 +1,9 @@
-import { expect } from 'chai';
-
 import('./test-util');
-import { x } from '../src/index';
+
+import { connect } from '../src/index';
 
 describe("Test", () => {
-    it("passes", () => {
-        expect(x).to.equal('test');
+    it("can connect to Frida", async () => {
+        await connect();
     });
 })
