@@ -1,0 +1,50 @@
+{
+  "name": "frida-js",
+  "version": "0.0.0",
+  "description": "Pure JS bindings to control Frida from node & browsers",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist/",
+    "src/"
+  ],
+  "scripts": {
+    "prebuild": "rimraf dist/*",
+    "build": "tsc",
+    "prepack": "npm run build",
+    "pretest": "npm run build",
+    "test": "mocha -r ts-node/register 'test/**/*.spec.ts'"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/httptoolkit/frida-js.git"
+  },
+  "keywords": [
+    "frida",
+    "pure",
+    "bindings",
+    "websocket",
+    "reverse-engineering",
+    "instrument",
+    "instrumentation",
+    "frida.re"
+  ],
+  "author": "Tim Perry <tim@httptoolkit.com>",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/httptoolkit/frida-js/issues"
+  },
+  "homepage": "https://github.com/httptoolkit/frida-js#readme",
+  "devDependencies": {
+    "@types/chai": "^4.3.5",
+    "@types/mocha": "^10.0.1",
+    "chai": "^4.3.7",
+    "mocha": "^10.2.0",
+    "rimraf": "^5.0.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.4"
+  }
+}
