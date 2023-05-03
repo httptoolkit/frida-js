@@ -8,11 +8,14 @@ import { execSync } from 'child_process';
 import * as semver from 'semver';
 import { fetch } from 'cross-fetch';
 
+import {
+    FRIDA_SERVER_DIR,
+    FRIDA_SERVER_BIN
+} from './run-frida-server';
+
 const deleteFile = promisify(fs.unlink);
 const canAccess = (path: string) => promisify(fs.access)(path).then(() => true).catch(() => false);
 
-export const FRIDA_SERVER_DIR = path.join(__dirname, '.frida-server');
-export const FRIDA_SERVER_BIN = path.join(FRIDA_SERVER_DIR, 'frida-server');
 const FRIDA_DOWNLOAD_METADATA = path.join(FRIDA_SERVER_DIR, 'metadata.json');
 
 async function setUpLocalEnv() {
@@ -108,7 +111,9 @@ async function downloadFridaServer(
         throw new Error('Frida download completed but server is unexpectedly not available');
     }
 
-    await fs.writeFileSync(FRIDA_DOWNLOAD_METADATA, JSON.stringify({
+    fs.chmodSync(FRIDA_SERVER_BIN, 0o755);
+
+    fs.writeFileSync(FRIDA_DOWNLOAD_METADATA, JSON.stringify({
         version: latestServerDetails.tag_name
     }));
 

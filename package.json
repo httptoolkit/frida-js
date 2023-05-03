@@ -12,12 +12,13 @@
     "prebuild": "rimraf dist/*",
     "build": "tsc",
     "prepack": "npm run build",
-    "pretest": "npm run build",
+    "pretest": "npm-run-all --parallel pretest:download-frida build",
+    "pretest:download-frida": "ts-node ./test/download-frida.ts",
     "test": "npm-run-all test:node test:browser",
     "test:node": "mocha -r ts-node/register 'test/**/*.spec.ts'",
     "test:browser": "karma start",
-    "test:browser:dev": "CONTINUOUS_TEST=true npm run test",
-    "test:browser:debug": "HEADFUL_TEST=true CONTINUOUS_TEST=true npm run test"
+    "test:browser:dev": "CONTINUOUS_TEST=true npm run test:browser",
+    "test:browser:debug": "HEADFUL_TEST=true CONTINUOUS_TEST=true npm run test:browser"
   },
   "engines": {
     "node": ">=16.0.0"

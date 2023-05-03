@@ -1,3 +1,11 @@
+import { startFridaServer, stopFridaServer } from './test/run-frida-server';
+
+startFridaServer().then((server) => server.unref());
+process.on('exit', async (code: number) => {
+    stopFridaServer();
+    process.exit(code);
+});
+
 const CONTINUOUS = process.env.CONTINUOUS_TEST === 'true';
 const HEADFUL = process.env.HEADFUL_TEST === 'true';
 const CI = process.env.CI;
@@ -14,7 +22,8 @@ module.exports = function(config: any) {
         },
         esbuild: {
             format: 'esm',
-            target: 'esnext'
+            target: 'esnext',
+            external: ['./test/run-frida-server'],
         },
         plugins: [
             'karma-chrome-launcher',
