@@ -26,7 +26,10 @@ module.exports = function(config: any) {
         esbuild: {
             format: 'esm',
             target: 'esnext',
-            external: ['./test/run-frida-server'],
+            external: [
+                './test/run-frida-server',
+                'child_process'
+            ],
             plugins: [
                 NodeModulesPolyfillPlugin(),
                 NodeGlobalsPolyfillPlugin({
