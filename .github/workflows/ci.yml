@@ -4,7 +4,9 @@ jobs:
   build:
     name: Build & test
     runs-on: ubuntu-latest
-    container: httptoolkit/act-build-base:v3.0.0
+    container:
+      image: httptoolkit/act-build-base:v3.0.0
+      options: --privileged # Required for Frida attach in tests
 
     strategy:
       matrix:
@@ -20,4 +22,8 @@ jobs:
           cache-dependency-path: 'package.json'
 
       - run: npm install
+
+      - name: 'Allow attaching to running Linux processes'
+        run: sudo sysctl kernel.yama.ptrace_scope=0
+
       - run: npm test
