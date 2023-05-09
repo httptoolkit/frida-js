@@ -44,6 +44,8 @@
   },
   "homepage": "https://github.com/httptoolkit/frida-js#readme",
   "devDependencies": {
+    "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
+    "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
     "@types/chai": "^4.3.5",
     "@types/mocha": "^10.0.1",
     "@types/semver": "^7.3.13",
@@ -64,6 +66,8 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
-    "ws": "^8.13.0"
+    "@httptoolkit/dbus-native": "^0.1.0",
+    "@httptoolkit/websocket-stream": "^6.0.1",
+    "isomorphic-ws": "^4.0.1"
   }
 }

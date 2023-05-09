@@ -1,3 +1,6 @@
+import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill';
+import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill';
+
 import { startFridaServer, stopFridaServer } from './test/run-frida-server';
 
 startFridaServer().then((server) => server.unref());
@@ -24,6 +27,13 @@ module.exports = function(config: any) {
             format: 'esm',
             target: 'esnext',
             external: ['./test/run-frida-server'],
+            plugins: [
+                NodeModulesPolyfillPlugin(),
+                NodeGlobalsPolyfillPlugin({
+                    process: true,
+                    buffer: true
+                })
+            ]
         },
         plugins: [
             'karma-chrome-launcher',
