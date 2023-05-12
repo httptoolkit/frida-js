@@ -1,5 +1,6 @@
 import * as path from 'path';
 import { spawn, ChildProcess } from 'child_process';
+import { delay } from './test-util';
 
 let fridaServer: ChildProcess | undefined;
 
@@ -22,6 +23,9 @@ export async function startFridaServer() {
     await new Promise((resolve) => {
         fridaServer!.on('spawn', resolve);
     });
+
+    // Add a little delay just to make sure the server is definitely started & ready
+    await delay(500);
 
     return fridaServer;
 }

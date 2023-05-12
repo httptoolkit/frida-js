@@ -1,10 +1,10 @@
-import('./test-util');
+import('./frida-test-setup');
 
 import * as childProc from 'child_process';
 import { expect } from 'chai';
 
-import { connect } from '../src/index';
 import { isNode } from './test-util';
+import { connect } from '../src/index';
 
 describe("Frida-JS", () => {
     it("can connect to Frida and list targets", async () => {
