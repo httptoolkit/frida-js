@@ -11,12 +11,12 @@ export async function startFridaServer() {
     if (fridaServer) throw new Error("Can't start Frida server when one is already running");
 
     fridaServer = spawn(FRIDA_SERVER_BIN, { stdio: 'inherit' });
+    fridaServer.unref();
 
     fridaServer.on('close', (code) => {
         if (code !== 0 && code !== null) {
             throw new Error(`Frida exited unexpectedly with code ${code}`);
         }
-
         fridaServer = undefined;
     });
 
@@ -32,9 +32,17 @@ export async function startFridaServer() {
 
 export async function stopFridaServer() {
     if (!fridaServer) return;
+    if (fridaServer.exitCode !== null) return;
+
+    const exitPromise = new Promise((resolve) => {
+        fridaServer!.on('exit', resolve);
+    });
+
     fridaServer.kill();
 
-    return new Promise((resolve) => {
-        fridaServer?.on('close', resolve);
-    });
+    await Promise.race([
+        exitPromise,
+        // Sometimes Frida doesn't seem to exit cleanly. Just kill it instead if need be:
+        delay(500).then(() => fridaServer?.kill('SIGKILL'))
+    ]);
 }
