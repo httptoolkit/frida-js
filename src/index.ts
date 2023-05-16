@@ -62,7 +62,7 @@ class FridaSession {
      * Linux specifically, if the process is not a child of your own process, you may
      * need to run `sudo sysctl kernel.yama.ptrace_scope=0` first.
      */
-    async injectScript(pid: number, fridaScript: string) {
+    async injectIntoProcess(pid: number, fridaScript: string) {
         const hostSession = await this.getHostSession();
 
         const [sessionId] = await hostSession.Attach(pid, {});
@@ -81,7 +81,7 @@ class FridaSession {
         const fridaScript = require('../scripts/node-js-inject.js')
             .buildNodeJsInjectionScript(nodeScript);
 
-        return this.injectScript(pid, fridaScript);
+        return this.injectIntoProcess(pid, fridaScript);
     }
 
 }
