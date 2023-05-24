@@ -4,10 +4,17 @@ import * as ChildProc from 'child_process';
 import * as path from 'path';
 import { expect } from 'chai';
 
-import { isNode } from './test-util';
+import { fetch } from 'cross-fetch';
+
+import { delay, isNode } from './test-util';
 import { connect } from '../src/index';
 
+const FIXTURES_BASE = isNode
+    ? path.join(__dirname, 'fixtures')
+    : process.env.FIXTURES_PATH!;
+
 describe("Frida-JS", () => {
+
     it("can connect to Frida and list targets", async () => {
         const fridaClient = await connect();
         const processes = await fridaClient.enumerateProcesses();
@@ -19,7 +26,6 @@ describe("Frida-JS", () => {
             expect(thisProcess[1]).to.equal('node');
         }
     });
-
 
     if (isNode) {
         it("can inject into a target process", async () => {
@@ -115,5 +121,36 @@ describe("Frida-JS", () => {
             expect(output).to.equal('Hello from injected script!\n');
         });
     }
+
+    it("can launch a process with a hook script injected", async function() {
+        // Launch a server process with a script injected
+        const fridaClient = await connect();
+        await fridaClient.spawnWithScript(
+            path.join(FIXTURES_BASE, `serve-${process.platform}-${process.arch}`),
+            ['original', 'arguments'],
+            `
+                const serveMessageFn = DebugSymbol.fromName('serve_message');
+
+                const messageToInject = "INJECTED";
+                const messagePtr = Memory.allocUtf8String(messageToInject);
+
+                // Hook the serve_message function and replace the argument
+                Interceptor.attach(ptr(serveMessageFn.address), {
+                    onEnter(args) {
+                        args[1] = messagePtr; // Arg 1 is pointer to string
+                        args[2] = ptr(messageToInject.length.toString(16)) // Arg 2 is length
+                        // (Note that Rust strings aren't null-terminated!)
+                    }
+                });
+            `
+        );
+
+        await delay(10); // Wait momentarily for the server to start listening
+
+        const resultingResponse = await fetch('http://localhost:3000');
+        const resultingMessage = await resultingResponse.text();
+
+        expect(resultingMessage).to.equal('INJECTED');
+    });
 
 })

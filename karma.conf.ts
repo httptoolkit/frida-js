@@ -1,3 +1,4 @@
+import * as path from 'path';
 import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill';
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill';
 
@@ -30,6 +31,11 @@ module.exports = function(config: any) {
                 './test/run-frida-server',
                 'child_process'
             ],
+            define: {
+                'process.env.FIXTURES_PATH': JSON.stringify(path.join(__dirname, 'test', 'fixtures')),
+                'process.platform': JSON.stringify(process.platform),
+                'process.arch': JSON.stringify(process.arch),
+            },
             plugins: [
                 NodeModulesPolyfillPlugin(),
                 NodeGlobalsPolyfillPlugin({

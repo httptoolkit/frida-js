@@ -25,6 +25,17 @@ export async function connect() {
 interface HostSession {
     EnumerateProcesses(arg: {}): Promise<Array<[number, string]>>;
     Attach(pid: number, options: {}): Promise<[string]>;
+    Spawn(program: string, options: [
+        hasArgv: boolean,
+        argv: string[],
+        hasEnvP: boolean,
+        envp: string[],
+        hasEnv: boolean,
+        env: string[],
+        cwd: string,
+        stdio: number,
+        aux: []
+    ]): Promise<number>;
 }
 
 interface AgentSession {
@@ -82,6 +93,27 @@ class FridaSession {
             .buildNodeJsInjectionScript(nodeScript);
 
         return this.injectIntoProcess(pid, fridaScript);
+    }
+
+    async spawnWithScript(command: string, args: string[], fridaScript: string) {
+        const hostSession: any = await this.getHostSession();
+
+        const pid = await hostSession.Spawn(command, [
+            true, [command, ...args],
+            false, [],
+            false, [],
+            "",
+            0,
+            []
+        ]);
+
+        const [sessionId] = await hostSession.Attach(pid, {});
+        const agentSession = await this.getAgentSession(sessionId);
+
+        const scriptId = await agentSession.CreateScript(fridaScript, {});
+        await agentSession.LoadScript(scriptId);
+
+        await hostSession.Resume(pid);
     }
 
 }
