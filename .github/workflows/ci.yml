@@ -26,6 +26,6 @@ jobs:
       - name: 'Allow attaching to running Linux processes'
         run: sudo sysctl kernel.yama.ptrace_scope=0
 
-      - run: npm test
+      - run: npm test && ps auf || true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
