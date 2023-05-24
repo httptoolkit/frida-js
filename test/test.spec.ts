@@ -145,7 +145,7 @@ describe("Frida-JS", () => {
             `
         );
 
-        await delay(10); // Wait momentarily for the server to start listening
+        await delay(100); // Wait momentarily for the server to start listening
 
         const resultingResponse = await fetch('http://localhost:3000');
         const resultingMessage = await resultingResponse.text();
