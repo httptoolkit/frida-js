@@ -38,7 +38,11 @@ pub async fn serve_message(message: &str) {
                     });
 
                     return Ok::<_, HyperError>(
-                        Response::new(Body::from(Arc::clone(&message).to_string()))
+                        Response::builder()
+                            .status(200)
+                            .header("Access-Control-Allow-Origin", "*")
+                            .body(Body::from(Arc::clone(&message).to_string()))
+                            .unwrap()
                     );
                 }
             }))
