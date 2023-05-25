@@ -1,3 +1,5 @@
+const log = require('why-is-node-running');
+
 import * as path from 'path';
 import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill';
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill';
@@ -14,6 +16,8 @@ const CONTINUOUS = process.env.CONTINUOUS_TEST === 'true';
 const HEADFUL = process.env.HEADFUL_TEST === 'true';
 const CI = process.env.CI;
 
+setTimeout(() => log(), 5000);
+
 module.exports = function(config: any) {
     config.set({
         frameworks: ['mocha', 'chai'],
@@ -29,7 +33,8 @@ module.exports = function(config: any) {
             target: 'esnext',
             external: [
                 './test/run-frida-server',
-                'child_process'
+                'child_process',
+                'why-is-node-running'
             ],
             define: {
                 'process.env.FIXTURES_PATH': JSON.stringify(path.join(__dirname, 'test', 'fixtures')),

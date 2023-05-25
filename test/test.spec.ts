@@ -1,4 +1,4 @@
-const log = require('why-is-node-running');
+const log = !!globalThis.process?.versions.node ? require('why-is-node-running') : {};
 
 import('./frida-test-setup');
 
