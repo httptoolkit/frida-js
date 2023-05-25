@@ -1,3 +1,5 @@
+const log = require('why-is-node-running');
+
 import('./frida-test-setup');
 
 import * as ChildProc from 'child_process';
@@ -12,6 +14,10 @@ import { connect } from '../src/index';
 const FIXTURES_BASE = isNode
     ? path.join(__dirname, 'fixtures')
     : process.env.FIXTURES_PATH!;
+
+if (isNode) {
+    setTimeout(() => log(), 5000);
+}
 
 describe("Frida-JS", () => {
 
