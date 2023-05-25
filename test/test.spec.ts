@@ -108,6 +108,8 @@ describe("Frida-JS", () => {
                 childNodeProc.on('error', reject);
             });
 
+            console.log('Node proc spawned');
+
             // Inject into it:
             const fridaClient = await connect();
             await fridaClient.injectIntoNodeJsProcess(
@@ -115,7 +117,11 @@ describe("Frida-JS", () => {
                 'console.log("Hello from injected script!"); process.exit(0);'
             );
 
+            console.log('Node proc injected');
+
             const { exitCode, output } = await outputPromise;
+
+            console.log('Node proc exited');
 
             expect(exitCode).to.equal(0);
             expect(output).to.equal('Hello from injected script!\n');
