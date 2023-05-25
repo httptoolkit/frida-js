@@ -110,7 +110,7 @@ describe("Frida-JS", () => {
 
             // Inject into it:
             const fridaClient = await connect();
-            await fridaClient.injectIntoNodeJsProcess(
+            await fridaClient.injectIntoNodeJSProcess(
                 childNodeProc.pid!,
                 'console.log("Hello from injected script!"); process.exit(0);'
             );

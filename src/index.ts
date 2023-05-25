@@ -88,7 +88,7 @@ class FridaSession {
      * code string will be wrapped with a Frida hook that injects it directly into
      * the event loop, so it will run immediately.
      */
-    async injectIntoNodeJsProcess(pid: number, nodeScript: string) {
+    async injectIntoNodeJSProcess(pid: number, nodeScript: string) {
         const fridaScript = require('../scripts/node-js-inject.js')
             .buildNodeJsInjectionScript(nodeScript);
 
