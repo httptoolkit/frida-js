@@ -47,11 +47,15 @@ interface AgentSession {
     LoadScript(scriptId: [number]): Promise<void>;
 }
 
-class FridaSession {
+export class FridaSession {
 
     constructor(
         private bus: dbus.DBusClient
     ) {}
+
+    async disconnect() {
+        return this.bus.disconnect();
+    }
 
     private getHostSession() {
         return this.bus

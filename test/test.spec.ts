@@ -7,7 +7,7 @@ import { expect } from 'chai';
 import { fetch } from 'cross-fetch';
 
 import { delay, isNode } from './test-util';
-import { connect } from '../src/index';
+import { connect, FridaSession } from '../src/index';
 
 const FIXTURES_BASE = isNode
     ? path.join(__dirname, 'fixtures')
@@ -15,8 +15,15 @@ const FIXTURES_BASE = isNode
 
 describe("Frida-JS", () => {
 
+    let fridaClient: FridaSession;
+
+    afterEach(async () => {
+        await fridaClient?.disconnect();
+        (fridaClient as any) = undefined;
+    })
+
     it("can connect to Frida and list targets", async () => {
-        const fridaClient = await connect();
+        fridaClient = await connect();
         const processes = await fridaClient.enumerateProcesses();
 
         expect(processes.length).to.be.greaterThan(0);
@@ -58,7 +65,7 @@ describe("Frida-JS", () => {
             });
 
             // Inject into it:
-            const fridaClient = await connect();
+            fridaClient = await connect();
             await fridaClient.injectIntoProcess(childProc.pid!, `
                 const shouldContinue = DebugSymbol.fromName('should_continue');
 
@@ -109,7 +116,7 @@ describe("Frida-JS", () => {
             });
 
             // Inject into it:
-            const fridaClient = await connect();
+            fridaClient = await connect();
             await fridaClient.injectIntoNodeJSProcess(
                 childNodeProc.pid!,
                 'console.log("Hello from injected script!"); process.exit(0);'
@@ -124,7 +131,7 @@ describe("Frida-JS", () => {
 
     it("can launch a process with a hook script injected", async function() {
         // Launch a server process with a script injected
-        const fridaClient = await connect();
+        fridaClient = await connect();
         await fridaClient.spawnWithScript(
             path.join(FIXTURES_BASE, `serve-${process.platform}-${process.arch}`),
             ['original', 'arguments'],
@@ -165,8 +172,8 @@ describe("Frida-JS", () => {
             }
         }
 
-        const client = await connect({ host: 'localhost:27042' });
-        expect((await client.enumerateProcesses()).length).to.be.greaterThan(0);
+        fridaClient = await connect({ host: 'localhost:27042' });
+        expect((await fridaClient.enumerateProcesses()).length).to.be.greaterThan(0);
     });
 
 })
