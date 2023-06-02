@@ -34,6 +34,62 @@ describe("Frida-JS", () => {
         }
     });
 
+    it("can connect to a Frida instance by address", async () => {
+        try {
+            await connect({ host: 'localhost:12345' });
+            throw new Error('Should not connect successfully');
+        } catch (e: any) {
+            // This is expected. We can only check the error in Node though, as browsers
+            // don't expose full network error details:
+            if (isNode) {
+                expect(e.message).to.include('ECONNREFUSED 127.0.0.1:12345');
+            }
+        }
+
+        fridaClient = await connect({ host: 'localhost:27042' });
+        expect((await fridaClient.enumerateProcesses()).length).to.be.greaterThan(0);
+    });
+
+    it("can query Frida server metadata", async () => {
+        fridaClient = await connect();
+        const metadata = await fridaClient.queryMetadata();
+
+        expect(metadata.access).to.equal('full');
+        expect(metadata.arch).to.equal(process.arch);
+        expect(metadata.platform).to.equal(process.platform);
+    });
+
+    it("can launch a process with a hook script injected", async function() {
+        // Launch a server process with a script injected
+        fridaClient = await connect();
+        await fridaClient.spawnWithScript(
+            path.join(FIXTURES_BASE, `serve-${process.platform}-${process.arch}`),
+            ['original', 'arguments'],
+            `
+                const serveMessageFn = DebugSymbol.fromName('serve_message');
+
+                const messageToInject = "INJECTED";
+                const messagePtr = Memory.allocUtf8String(messageToInject);
+
+                // Hook the serve_message function and replace the argument
+                Interceptor.attach(ptr(serveMessageFn.address), {
+                    onEnter(args) {
+                        args[1] = messagePtr; // Arg 1 is pointer to string
+                        args[2] = ptr(messageToInject.length.toString(16)) // Arg 2 is length
+                        // (Note that Rust strings aren't null-terminated!)
+                    }
+                });
+            `
+        );
+
+        await delay(100); // Wait momentarily for the server to start listening
+
+        const resultingResponse = await fetch('http://localhost:3000');
+        const resultingMessage = await resultingResponse.text();
+
+        expect(resultingMessage).to.equal('INJECTED');
+    });
+
     if (isNode) {
         it("can inject into a target process", async () => {
             // Start a demo subprocess to inject into:
@@ -128,52 +184,5 @@ describe("Frida-JS", () => {
             expect(output).to.equal('Hello from injected script!\n');
         });
     }
-
-    it("can launch a process with a hook script injected", async function() {
-        // Launch a server process with a script injected
-        fridaClient = await connect();
-        await fridaClient.spawnWithScript(
-            path.join(FIXTURES_BASE, `serve-${process.platform}-${process.arch}`),
-            ['original', 'arguments'],
-            `
-                const serveMessageFn = DebugSymbol.fromName('serve_message');
-
-                const messageToInject = "INJECTED";
-                const messagePtr = Memory.allocUtf8String(messageToInject);
-
-                // Hook the serve_message function and replace the argument
-                Interceptor.attach(ptr(serveMessageFn.address), {
-                    onEnter(args) {
-                        args[1] = messagePtr; // Arg 1 is pointer to string
-                        args[2] = ptr(messageToInject.length.toString(16)) // Arg 2 is length
-                        // (Note that Rust strings aren't null-terminated!)
-                    }
-                });
-            `
-        );
-
-        await delay(100); // Wait momentarily for the server to start listening
-
-        const resultingResponse = await fetch('http://localhost:3000');
-        const resultingMessage = await resultingResponse.text();
-
-        expect(resultingMessage).to.equal('INJECTED');
-    });
-
-    it("can connect to a Frida instance by address", async () => {
-        try {
-            await connect({ host: 'localhost:12345' });
-            throw new Error('Should not connect successfully');
-        } catch (e: any) {
-            // This is expected. We can only check the error in Node though, as browsers
-            // don't expose full network error details:
-            if (isNode) {
-                expect(e.message).to.include('ECONNREFUSED 127.0.0.1:12345');
-            }
-        }
-
-        fridaClient = await connect({ host: 'localhost:27042' });
-        expect((await fridaClient.enumerateProcesses()).length).to.be.greaterThan(0);
-    });
 
 })

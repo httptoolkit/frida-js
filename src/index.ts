@@ -1,6 +1,7 @@
 import WebSocket = require('isomorphic-ws');
 import createWebSocketStream = require('@httptoolkit/websocket-stream');
 import dbus = require('@httptoolkit/dbus-native');
+import { DBusVariantDict, parseDBusVariantDict } from './dbus-value';
 
 const DEFAULT_FRIDA_PORT = 27042;
 
@@ -27,6 +28,7 @@ export async function connect(options: {
 }
 
 interface HostSession {
+    QuerySystemParameters(): Promise<DBusVariantDict>;
     EnumerateProcesses(arg: {}): Promise<Array<[number, string]>>;
     Attach(pid: number, options: {}): Promise<[string]>;
     Spawn(program: string, options: [
@@ -69,7 +71,13 @@ export class FridaSession {
             .getInterface<AgentSession>('/re/frida/AgentSession/' + sessionId, 're.frida.AgentSession16');
     }
 
-    async enumerateProcesses() {
+    async queryMetadata(): Promise<Record<string, string>> {
+        const hostSession = await this.getHostSession();
+        const rawMetadata = await hostSession.QuerySystemParameters();
+        return parseDBusVariantDict(rawMetadata) as Record<string, string>;
+    }
+
+    async enumerateProcesses(): Promise<Array<[number, string]>> {
         const hostSession = await this.getHostSession();
         return hostSession.EnumerateProcesses({});
     }
