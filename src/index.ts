@@ -2,10 +2,14 @@ import WebSocket = require('isomorphic-ws');
 import createWebSocketStream = require('@httptoolkit/websocket-stream');
 import dbus = require('@httptoolkit/dbus-native');
 
-const FRIDA_PORT = 27042;
+const DEFAULT_FRIDA_PORT = 27042;
 
-export async function connect() {
-    const socket = new WebSocket(`ws://localhost:${FRIDA_PORT}/ws`);
+export async function connect(options: {
+    host?: string
+} = {}) {
+    const fridaHost = options.host || `localhost:${DEFAULT_FRIDA_PORT}`;
+
+    const socket = new WebSocket(`ws://${fridaHost}/ws`);
     socket.binaryType = 'arraybuffer';
 
     await new Promise((resolve, reject) => {

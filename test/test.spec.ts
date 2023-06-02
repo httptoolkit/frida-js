@@ -153,4 +153,20 @@ describe("Frida-JS", () => {
         expect(resultingMessage).to.equal('INJECTED');
     });
 
+    it("can connect to a Frida instance by address", async () => {
+        try {
+            await connect({ host: 'localhost:12345' });
+            throw new Error('Should not connect successfully');
+        } catch (e: any) {
+            // This is expected. We can only check the error in Node though, as browsers
+            // don't expose full network error details:
+            if (isNode) {
+                expect(e.message).to.include('ECONNREFUSED 127.0.0.1:12345');
+            }
+        }
+
+        const client = await connect({ host: 'localhost:27042' });
+        expect((await client.enumerateProcesses()).length).to.be.greaterThan(0);
+    });
+
 })
