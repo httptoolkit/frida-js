@@ -55,6 +55,9 @@ export class FridaSession {
         private bus: dbus.DBusClient
     ) {}
 
+    /**
+     * Disconnect from Frida. Returns a promise that resolves once the connection has been closed.
+     */
     async disconnect() {
         return this.bus.disconnect();
     }
@@ -71,12 +74,20 @@ export class FridaSession {
             .getInterface<AgentSession>('/re/frida/AgentSession/' + sessionId, 're.frida.AgentSession16');
     }
 
+    /**
+     * Query the system parameters of the target Frida server.
+     */
     async queryMetadata(): Promise<Record<string, string>> {
         const hostSession = await this.getHostSession();
         const rawMetadata = await hostSession.QuerySystemParameters();
         return parseDBusVariantDict(rawMetadata) as Record<string, string>;
     }
 
+
+    /**
+     * List all running processes accessible to the target Frida server. Returns an array
+     * of [pid, process name] pairs.
+     */
     async enumerateProcesses(): Promise<Array<[number, string]>> {
         const hostSession = await this.getHostSession();
         return hostSession.EnumerateProcesses({});

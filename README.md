@@ -14,11 +14,11 @@ This is particularly useful in mobile device scenarios, as you can now run Frida
 npm install frida-js
 ```
 
-First, you'll need a Frida instance to connect to. For now Frida-JS supports local Frida servers only, but remote device support is coming imminently.
+First, you'll need a v15+ Frida instance to connect to. If you don't have this already, you'll first want to download, extract & run the `frida-server` release for your platform from https://github.com/frida/frida/releases/latest. In future Frida-JS will provide an API to do this automatically on demand.
 
-If you don't have this already, you'll want to download, extract & run the `frida-server` release for your platform from https://github.com/frida/frida/releases/latest. In future Frida-JS will provide an API to do this automatically on demand.
+Frida-JS supports both local & remote Frida instances, but doesn't do automated tunnelling over USB or ADB, and so mobile devices will require setup to expose the Frida port (27042) so that it's accessible to this client.
 
-To use Frida-JS, first call the exported `connect()` method and wait for the returned promise to get a FridaClient, and then call the methods there to query the available targets and hook them (full API listing below). For example:
+Once you have a running accessible Frida server, to use Frida-JS you first call the exported `connect()` method and wait for the returned promise to get a FridaClient, and then call the methods there to query the available targets and hook them (full API listing below). For example:
 
 ```javascript
 import { connect } from 'frida-js';
@@ -44,6 +44,8 @@ await fridaClient.spawnWithScript(
 );
 ```
 
+To connect to a remote instance (such as a mobile device) you can pass options to `connect()`, such as `connect({ host: 'localhost:27042' })`.
+
 See the full API reference below for more details of the Frida APIs exposed, or see the test suite for a selection of working examples, and fixtures to test against.
 
 ## Frida Caveats
@@ -62,23 +64,45 @@ There are a few general Frida issues you might commonly run into while using thi
 
 ## API reference
 
-### `FridaJS.connect()`
+### `FridaJS.connect([options])`
 
 Connects to a local Frida server, and returns a promise for a FridaClient.
 
-### `FridaClient.enumateProcesses()`
+Options must be an object containing the connection parameters. `host` is the only parameter currently supported, and must be set to the hostname and (optional) port string for the target Frida instance. If not set, it defaults to `localhost:27042`.
+
+### `fridaClient.queryMetadata()`
+
+Returns a promise for an object containing the exposed system parameters of the target Frida server. For example, on Linux this might look like:
+
+```json
+{
+  "arch": "x64",
+  "os": { "version": "22.10", "id": "ubuntu", "name": "Ubuntu" },
+  "platform": "linux",
+  "name": "your-system-hostname",
+  "access": "full"
+}
+```
+
+The exact parameters returned may vary and will depend on the specific target system.
+
+### `fridaClient.enumerateProcesses()`
 
 Returns a promise for an array of `[pid: number, processName: string]` pairs. You can use this to query the currently running processes that can be targeted on your local machine.
 
 
-### `FridaClient.injectIntoProcess(pid: number, script: string)`
+### `fridaClient.injectIntoProcess(pid: number, script: string)`
 
 Injects a given Frida script into a target process, specified by PID. Returns a promise that will resolve once the script has been successfully injected.
 
-### `FridaClient.injectIntoNodeJSProcess(pid: number, script: string)`
+### `fridaClient.injectIntoNodeJSProcess(pid: number, script: string)`
 
 Injects real JavaScript into Node.JS processes specifically. Rather than requiring a full Frida script, this takes any normal JS script, and conveniently wraps it with a script to inject it into the V8 event loop for you, so you can just write JS and run it in a target directly.
 
-### `FridaClient.spawnWithScript(command: string, args: string[], script: string)`
+### `fridaClient.spawnWithScript(command: string, args: string[], script: string)`
 
 Takes a command to run and arguments, launches the process via Frida, injects the given Frida script before it starts, and then resumes the process.
+
+### `fridaClient.disconnect()`
+
+When you're done, it's polite to disconnect from Frida. This returns a promise which resolves once the WebSocket connection has been closed.
