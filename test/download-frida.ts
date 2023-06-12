@@ -1,20 +1,18 @@
 import * as path from 'path';
 import * as os from 'os';
-import * as fs from 'fs';
-import * as stream from 'stream';
-import { promisify } from 'util';
-import { execSync } from 'child_process';
+import * as fs from 'fs/promises';
+import { createWriteStream } from 'fs';
+import { Writable } from 'stream';
 
 import * as semver from 'semver';
-import { fetch } from 'cross-fetch';
+import { XzReadableStream } from 'xz-decompress';
 
 import {
     FRIDA_SERVER_DIR,
     FRIDA_SERVER_BIN
 } from './run-frida-server';
 
-const deleteFile = promisify(fs.unlink);
-const canAccess = (path: string) => promisify(fs.access)(path).then(() => true).catch(() => false);
+const canAccess = (path: string) => fs.access(path).then(() => true).catch(() => false);
 
 const FRIDA_DOWNLOAD_METADATA = path.join(FRIDA_SERVER_DIR, 'metadata.json');
 
@@ -85,37 +83,33 @@ async function downloadFridaServer(
 
     console.log(`Downloading frida-server from ${asset.browser_download_url}...`);
 
-    const downloadPath = path.join(FRIDA_SERVER_DIR, 'frida-server.xz');
-
     const assetDownload = await fetch(asset.browser_download_url);
 
-    fs.mkdirSync(FRIDA_SERVER_DIR, { recursive: true });
-    const assetWrite = (assetDownload.body as any as stream.Readable)
-        .pipe(fs.createWriteStream(downloadPath));
+    await fs.mkdir(FRIDA_SERVER_DIR, { recursive: true });
 
-    await new Promise((resolve, reject) => {
-        assetWrite.on('finish', resolve);
-        assetWrite.on('error', reject);
-    });
-
-    console.log(`Extracting to ${FRIDA_SERVER_DIR}`);
-
-    await deleteFile(FRIDA_SERVER_BIN).catch((e: any) => {
+    await fs.unlink(FRIDA_SERVER_BIN).catch((e: any) => {
         if (e.code === 'ENOENT') return;
         else throw e;
     });
-    execSync(`xz -k -d '${downloadPath}'`);
-    await deleteFile(downloadPath);
 
-    if (!await canAccess(FRIDA_SERVER_BIN)) {
-        throw new Error('Frida download completed but server is unexpectedly not available');
+    if (!assetDownload.ok) {
+        throw new Error(`Frida download was unsuccessful, returned ${assetDownload.status}`);
     }
 
-    fs.chmodSync(FRIDA_SERVER_BIN, 0o755);
+    if (!assetDownload.body) {
+        throw new Error('No body available for Frida download');
+    }
 
-    fs.writeFileSync(FRIDA_DOWNLOAD_METADATA, JSON.stringify({
-        version: latestServerDetails.tag_name
-    }));
+    // Decompress the .xz file to a raw file stream (no tar - it's a single file)
+    await new XzReadableStream(assetDownload.body!)
+        .pipeTo(Writable.toWeb(createWriteStream(FRIDA_SERVER_BIN)));
+
+    await Promise.all([
+        fs.chmod(FRIDA_SERVER_BIN, 0o755),
+        fs.writeFile(FRIDA_DOWNLOAD_METADATA, JSON.stringify({
+            version: latestServerDetails.tag_name
+        }))
+    ]);
 
     console.log('Frida-server download completed');
 }

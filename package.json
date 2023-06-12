@@ -22,7 +22,7 @@
     "test:browser:debug": "HEADFUL_TEST=true CONTINUOUS_TEST=true npm run test:browser"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18.0.0"
   },
   "repository": {
     "type": "git",
@@ -64,7 +64,8 @@
     "rimraf": "^5.0.0",
     "semver": "^7.5.0",
     "ts-node": "^10.9.1",
-    "typescript": "^5.0.4"
+    "typescript": "^5.0.4",
+    "xz-decompress": "^0.2.0"
   },
   "dependencies": {
     "@httptoolkit/dbus-native": "^0.1.1",
