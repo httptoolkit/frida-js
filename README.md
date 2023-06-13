@@ -4,7 +4,7 @@
 
 Pure-JS bindings to control Frida from node.js &amp; browsers.
 
-This module provides access to Frida, without bundling Frida itself. That means no native binaries included, no compilation required, and no heavyweight files (the entire library is under 10KB). This works by making WebSocket connections (supported in Frida v15+) directly to an existing Frida instance elsewhere.
+This module provides access to Frida, without bundling Frida itself. That means no native binaries included, no compilation required, and no heavyweight files. This works by making WebSocket connections (supported in Frida v15+) directly to an existing Frida instance elsewhere.
 
 This is particularly useful in mobile device scenarios, as you can now run Frida purely on the device (as an Android/iOS Frida server instance, or using Frida-Gadget embedded in a specific application) and connect to it through using this library as a tiny client in Node.js or a browser elsewhere.
 
