@@ -110,7 +110,7 @@ function findFridaDownloadUrl(
 
     let extension = platform === 'windows' ? 'exe\\.xz' : 'xz';
 
-    const assetRegex = new RegExp(`frida-server-${version}-${platform}-${arch}\\.${extension}`);
+    const assetRegex = new RegExp(`frida-server-[\\d.\\.]+-${platform}-${arch}\\.${extension}`);
 
     const asset = assets.find((asset: { name: string }) => asset.name.match(assetRegex));
     if (!asset) {
