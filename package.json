@@ -70,6 +70,6 @@
     "@httptoolkit/dbus-native": "^0.1.1",
     "@httptoolkit/websocket-stream": "^6.0.1",
     "isomorphic-ws": "^4.0.1",
-    "xz-decompress": "^0.2.0"
+    "xz-decompress": "^0.2.1"
   }
 }
