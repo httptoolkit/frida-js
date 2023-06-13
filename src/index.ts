@@ -1,7 +1,13 @@
 import WebSocket = require('isomorphic-ws');
 import createWebSocketStream = require('@httptoolkit/websocket-stream');
 import dbus = require('@httptoolkit/dbus-native');
+
 import { DBusVariantDict, parseDBusVariantDict } from './dbus-value';
+
+export {
+    getFridaReleaseDetails,
+    downloadFridaServer
+} from './download-frida';
 
 const DEFAULT_FRIDA_PORT = 27042;
 

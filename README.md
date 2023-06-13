@@ -14,7 +14,29 @@ This is particularly useful in mobile device scenarios, as you can now run Frida
 npm install frida-js
 ```
 
-First, you'll need a v15+ Frida instance to connect to. If you don't have this already, you'll first want to download, extract & run the `frida-server` release for your platform from https://github.com/frida/frida/releases/latest. In future Frida-JS will provide an API to do this automatically on demand.
+### Setting up Frida
+
+First, you'll need a v15+ Frida instance to connect to.
+
+If you don't have this already, you'll first want to download, extract & run the `frida-server` release for your platform from https://github.com/frida/frida/releases/latest, either manually or using the `downloadFridaServer` method, like so:
+
+```javascript
+import { createWriteStream } from 'fs';
+import * as fs from 'fs/promise';
+
+import { downloadFridaServer } from 'frida-js';
+
+downloadFridaServer() // Downloads for your current platform & arch by default
+.pipe(createWriteStream('./frida-server')); // Add .exe to filename on Windows
+.on('finish', async () => {
+    await fs.chmod('./frida-server', 0o755); // Make Frida executable (Mac/Linux)
+    // You can now run ./frida-server to start up Frida.
+});
+```
+
+Although the library in general supports both Node & browsers, you'll need typically Node or manual setup for this initial step, before you use a browser to connect.
+
+### Controlling Frida
 
 Frida-JS supports both local & remote Frida instances, but doesn't do automated tunnelling over USB or ADB, and so mobile devices will require setup to expose the Frida port (27042) so that it's accessible to this client.
 
@@ -63,6 +85,19 @@ There are a few general Frida issues you might commonly run into while using thi
     Alternatively, in some scenarios you might want to just set `--privileged` instead.
 
 ## API reference
+
+### `FridaJS.downloadFridaServer(options)`
+
+Downloads a Frida server binary for a specific version & target platform (specified in the options). This returns a Node.js readable stream for the binary, which can be either written to a file locally or streamed elsewhere (e.g. via ADB push to an Android device).
+
+The options are:
+
+* `version` - *Required* - The version of Frida server to download. This can be either a specific version like 16.0.19, or the string `latest` to get the latest release.
+* `platform` - The target platform, e.g. `windows`, `linux`, `macos` or `android`. If not specified, the current device platform will be used.
+* `arch` - The target architecture, e.g. `x86`, `x64`, or `arm64`. If not specified, the current device's architecture will be used.
+* `ghToken` - A GitHub token to use when fetching the Frida release. If not specified, the value from the `GITHUB_TOKEN` environment variable will be used, if set. Downloads will usually work even if no token is available, but may hit GitHub rate limits especially if your IP is shared with other users (e.g. behind a corporate proxy).
+
+It's technically possible to call this method from a browser, but you'd rarely want to - generally you want to call this from some kind of Node.js setup script.
 
 ### `FridaJS.connect([options])`
 

@@ -14,7 +14,7 @@
     "build": "tsc",
     "prepack": "npm run build",
     "pretest": "npm-run-all --parallel pretest:download-frida build",
-    "pretest:download-frida": "ts-node ./test/download-frida.ts",
+    "pretest:download-frida": "ts-node ./test/download-test-frida.ts",
     "test": "npm-run-all test:node test:browser",
     "test:node": "mocha -r ts-node/register 'test/**/*.spec.ts'",
     "test:browser": "karma start",
@@ -64,12 +64,12 @@
     "rimraf": "^5.0.0",
     "semver": "^7.5.0",
     "ts-node": "^10.9.1",
-    "typescript": "^5.0.4",
-    "xz-decompress": "^0.2.0"
+    "typescript": "^5.0.4"
   },
   "dependencies": {
     "@httptoolkit/dbus-native": "^0.1.1",
     "@httptoolkit/websocket-stream": "^6.0.1",
-    "isomorphic-ws": "^4.0.1"
+    "isomorphic-ws": "^4.0.1",
+    "xz-decompress": "^0.2.0"
   }
 }
