@@ -144,3 +144,17 @@ Takes a command to run and arguments, launches the process via Frida, injects th
 ### `fridaClient.disconnect()`
 
 When you're done, it's polite to disconnect from Frida. This returns a promise which resolves once the WebSocket connection has been closed.
+
+## How does this work?
+
+This library uses the WebSocket API [added in Frida v15.0](https://frida.re/news/2021/07/18/frida-15-0-released/#part-viii-the-web). This API exposes Frida's existing protocol via WebSocket connection, notably making it accessible to clients (such as browsers) whose network connectivity is limited and generally being a convenient widely supported base protocol for local & remote connections.
+
+Once a WebSocket stream is connected, Frida can be controlled via the D-Bus protocol, sent over WebSocket connection. D-Bus is usually used as a protocol for IPC messaging in Linux desktop environments, but Frida uses it here for direct P2P connectivity over platform-specific transports (in this case, over WebSocket).
+
+D-Bus takes a bit of getting used to, if you're not familiar with it, but is conveniently introspectable at runtime, and Frida's internals also explicitly define the various interfaces (e.g. [here](https://github.com/frida/frida-core/blob/main/lib/base/session.vala)) for the exposed services.
+
+Using D-Bus from JavaScript is a little challenging, and normally requires native bindings to libdbus, which isn't practical in browser usage, and is inconvenient for cross-platform end-user deployments. One popular native JS library ([dbus-native](https://www.npmjs.com/package/dbus-native)) does exist but doesn't support P2P connections or various other facets of Frida's behaviour, so as part of this project a separate [@httptoolkit/dbus-native](https://github.com/httptoolkit/dbus-native) fork has been created, supporting all the various additional features required for Frida communication.
+
+Once connected to D-Bus, the interfaces themselves are introspectable and the specific methods & signatures used by this project are explicitly listed in the code [here](https://github.com/httptoolkit/frida-js/blob/24552ab8676487995a37496581ee6bed6fe9d01a/src/index.ts#L36-L56). In general, the `HostSession` service provides the general purpose methods exposed by a Frida instance, such as launching processes or attaching to existing processes, while `AgentSession` is used for methods on an process once it has been launched, such as launching hook scripts to modify the target process.
+
+All put together: this library connects via WebSocket, uses our dbus-native fork to negotiate a D-Bus session, calls HostSession methods to launch or attach to a target, and then calls AgentSession methods for the created target session to inject code directly into that process. All pure JS, all independent of platform, runtime & local/remote connectivity.
