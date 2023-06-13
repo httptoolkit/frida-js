@@ -22,15 +22,18 @@ If you don't have this already, you'll first want to download, extract & run the
 
 ```javascript
 import { createWriteStream } from 'fs';
-import * as fs from 'fs/promise';
+import * as fs from 'fs/promises';
 
 import { downloadFridaServer } from 'frida-js';
 
-downloadFridaServer() // Downloads for your current platform & arch by default
-.pipe(createWriteStream('./frida-server')); // Add .exe to filename on Windows
-.on('finish', async () => {
-    await fs.chmod('./frida-server', 0o755); // Make Frida executable (Mac/Linux)
-    // You can now run ./frida-server to start up Frida.
+downloadFridaServer({ version: 'latest' }) // Downloads for your current platform & arch by default
+.then((fridaServerStream) => {
+    fridaServerStream
+    .pipe(createWriteStream('./frida-server')) // Add .exe to filename on Windows
+    .on('finish', async () => {
+        await fs.chmod('./frida-server', 0o755); // Make Frida executable (Mac/Linux)
+        // You can now run ./frida-server to start up Frida.
+    });
 });
 ```
 
