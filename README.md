@@ -8,6 +8,14 @@ This module provides access to Frida, without bundling Frida itself. That means 
 
 This is particularly useful in mobile device scenarios, as you can now run Frida purely on the device (as an Android/iOS Frida server instance, or using Frida-Gadget embedded in a specific application) and connect to it through using this library as a tiny client in Node.js or a browser elsewhere.
 
+Using this library you can:
+
+* Easily download a ready-to-use Frida server binary for any target platform
+* Connect to a local or remote Frida server
+* Enumerate the target processes available to that server
+* Attach to an existing running process, and inject arbitrary code
+* Launch a new process, injecting arbitrary code to run before it starts
+
 ## Getting Started
 
 ```bash
