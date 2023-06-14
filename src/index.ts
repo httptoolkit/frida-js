@@ -2,7 +2,7 @@ import WebSocket = require('isomorphic-ws');
 import createWebSocketStream = require('@httptoolkit/websocket-stream');
 import dbus = require('@httptoolkit/dbus-native');
 
-import { DBusVariantDict, parseDBusVariantDict } from './dbus-value';
+import { DBusVariantDict, NestedStringDict, parseDBusVariantDict } from './dbus-value';
 
 export {
     getFridaReleaseDetails,
@@ -81,12 +81,13 @@ export class FridaSession {
     }
 
     /**
-     * Query the system parameters of the target Frida server.
+     * Query the system parameters of the target Frida server. Returns metadata
+     * as a nested dictionary of strings.
      */
-    async queryMetadata(): Promise<Record<string, string>> {
+    async queryMetadata(): Promise<NestedStringDict> {
         const hostSession = await this.getHostSession();
         const rawMetadata = await hostSession.QuerySystemParameters();
-        return parseDBusVariantDict(rawMetadata) as Record<string, string>;
+        return parseDBusVariantDict(rawMetadata);
     }
 
 

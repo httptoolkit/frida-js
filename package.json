@@ -48,6 +48,7 @@
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
     "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
     "@types/chai": "^4.3.5",
+    "@types/long": "^4.0.2",
     "@types/mocha": "^10.0.1",
     "@types/semver": "^7.3.13",
     "chai": "^4.3.7",
@@ -70,6 +71,7 @@
     "@httptoolkit/dbus-native": "^0.1.1",
     "@httptoolkit/websocket-stream": "^6.0.1",
     "isomorphic-ws": "^4.0.1",
+    "long": "^4.0.0",
     "xz-decompress": "^0.2.1"
   }
 }
