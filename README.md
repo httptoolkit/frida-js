@@ -145,9 +145,11 @@ Injects a given Frida script into a target process, specified by PID. Returns a 
 
 Injects real JavaScript into Node.JS processes specifically. Rather than requiring a full Frida script, this takes any normal JS script, and conveniently wraps it with a script to inject it into the V8 event loop for you, so you can just write JS and run it in a target directly.
 
-### `fridaClient.spawnWithScript(command: string, args: string[], script: string)`
+### `fridaClient.spawnWithScript(command: string, args: string[] | undefined, script: string)`
 
 Takes a command to run and arguments, launches the process via Frida, injects the given Frida script before it starts, and then resumes the process.
+
+Note that to launch apps on Android, `command` should be a package name like `com.android.dialer` and `args` must be undefined.
 
 ### `fridaClient.disconnect()`
 

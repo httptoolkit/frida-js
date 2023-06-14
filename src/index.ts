@@ -129,11 +129,13 @@ export class FridaSession {
         return this.injectIntoProcess(pid, fridaScript);
     }
 
-    async spawnWithScript(command: string, args: string[], fridaScript: string) {
+    async spawnWithScript(command: string, args: string[] | undefined, fridaScript: string) {
         const hostSession: any = await this.getHostSession();
 
         const pid = await hostSession.Spawn(command, [
-            true, [command, ...args],
+            ...(args
+                ? [true, [command, ...args]]
+                : [false, []]),
             false, [],
             false, [],
             "",
