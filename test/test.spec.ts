@@ -17,9 +17,21 @@ describe("Frida-JS", () => {
 
     let fridaClient: FridaSession;
 
+    let spawnedProc: ChildProc.ChildProcess | undefined;
+
     afterEach(async () => {
         await fridaClient?.disconnect();
         (fridaClient as any) = undefined;
+
+        if (spawnedProc && spawnedProc.exitCode === null && !spawnedProc.killed) {
+            try {
+                console.log('Killing leftover test subprocess');
+                spawnedProc.kill(9);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        spawnedProc = undefined;
     })
 
     it("can connect to Frida and list targets", async () => {
@@ -100,6 +112,7 @@ describe("Frida-JS", () => {
                 { stdio: 'pipe' }
             );
             childProc.unref();
+            spawnedProc = childProc; // Ensure this is killed after testing
 
             const outputPromise = new Promise<{
                 exitCode: number | null,
@@ -153,6 +166,7 @@ describe("Frida-JS", () => {
                 { stdio: 'pipe' }
             );
             childNodeProc.unref();
+            spawnedProc = childNodeProc; // Ensure this is killed after testing
 
             const outputPromise = new Promise<{
                 exitCode: number | null,
