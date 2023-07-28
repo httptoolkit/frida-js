@@ -47,6 +47,8 @@ downloadFridaServer({ version: 'latest' }) // Downloads for your current platfor
 
 Although the library in general supports both Node & browsers, you'll need typically Node or manual setup for this initial step, before you use a browser to connect.
 
+If you're doing this in production, you may want to use fixed parameters and SRI to guarantee the content of the download - see the options below for more information.
+
 ### Controlling Frida
 
 Frida-JS supports both local & remote Frida instances, but doesn't do automated tunnelling over USB or ADB, and so mobile devices will require setup to expose the Frida port (27042) so that it's accessible to this client.
@@ -107,8 +109,26 @@ The options are:
 * `platform` - The target platform, e.g. `windows`, `linux`, `macos` or `android`. If not specified, the current device platform will be used.
 * `arch` - The target architecture, e.g. `x86`, `x64`, or `arm64`. If not specified, the current device's architecture will be used.
 * `ghToken` - A GitHub token to use when fetching the Frida release. If not specified, the value from the `GITHUB_TOKEN` environment variable will be used, if set. Downloads will usually work even if no token is available, but may hit GitHub rate limits especially if your IP is shared with other users (e.g. behind a corporate proxy).
+* `sri` - An optional SRI hash which can be provided to guarantee the integrity of the downloaded binary. This should be the hash of the final extracted binary, not just the download body, in SRI format. To initially calculate the SRI, call `calculateFridaSRI` to pull a given version and hash the results. If `sri` is set, `version`, `platform` and `arch` must be fully specified or an error will be thrown.
 
 It's technically possible to call this method from a browser, but you'd rarely want to - generally you want to call this from some kind of Node.js setup script.
+
+### `FridaJS.calculateFridaSRI(options, hashOptions)`
+
+Options:
+
+* `version` - *Required* - The version of Frida server to download. This can be either a specific version like 16.0.19, or the string `latest` to get the latest release.
+* `platform` - *Required* - The target platform, e.g. `windows`, `linux`, `macos` or `android`. If not specified, the current device platform will be used.
+* `arch` - *Required* - The target architecture, e.g. `x86`, `x64`, or `arm64`. If not specified, the current device's architecture will be used.
+* `ghToken` - A GitHub token to use when fetching the Frida release. If not specified, the value from the `GITHUB_TOKEN` environment variable will be used, if set. Downloads will usually work even if no token is available, but may hit GitHub rate limits especially if your IP is shared with other users (e.g. behind a corporate proxy).
+
+Hash options:
+
+* `algorithms` - An array of hash algorithms to use for hash calculation (defaults to `['sha512']`).
+
+This pulls the specified Frida server version, and then calculates its hash. It returns an array of strings (one for each algorithm specified), any of which can be passed to `downloadFridaServer` as the `sri` argument.
+
+This isn't retrieving the hash from some sort of guaranteed source - instead it's effectively a trust-on-first-download model. By using this, you're assuming that the hash you retrieve at this point is correct, so you should run this on a trusted computer & network wherever possible.
 
 ### `FridaJS.connect([options])`
 

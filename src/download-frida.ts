@@ -1,13 +1,11 @@
 import * as os from 'os';
 import { Readable, PassThrough } from 'stream';
 
-import { XzReadableStream } from 'xz-decompress';
-
 interface FridaDownloadOptions {
     /**
      * The Frida version to download - either a version like '16.0.19' or 'latest'
      */
-    version: string,
+    version: string;
 
     // The specific values below are the currently available platforms & architectures for Frida
     // server as of v16.0.19.
@@ -25,7 +23,7 @@ interface FridaDownloadOptions {
         | 'linux'
         | 'macos'
         | 'qnx'
-        | 'windows',
+        | 'windows';
 
     /**
      * The target Frida architecture. Not all architecture are available, and these do not exactly match
@@ -47,7 +45,7 @@ interface FridaDownloadOptions {
         | 'mips'
         | 'mipsel'
         | 'mips64'
-        | 'mips64el',
+        | 'mips64el';
 
     /**
      * Optionally a GitHub token can be provided. If set it will be used to download Frida, thereby
@@ -55,11 +53,35 @@ interface FridaDownloadOptions {
      * from process.env.GITHUB_TOKEN will be used if available, or the request will be sent
      * anonymously.
      */
-    ghToken?: string
+    ghToken?: string;
+
+    /**
+     * Optionally an SRI hash can be provided, which will be checked against the resulting server
+     * binary that's streamed. If the download does not match the hash at completion, the
+     * stream will thrown an error. This should be in the standard Subresource Integrity Hash format.
+     *
+     * This can only be used for fully specified download versions, as using the latest version,
+     * or automatic arch/platform logic, can never guarantee returning the same hash every time.
+     * To protect against this, if this is specified but any of version, platform & arch are
+     * not, an error will be thrown.
+     *
+     * Note that this is the hash of the binary itself, after extraction (the same output as the
+     * returned stream) not just the hash of the initial download.
+     *
+     * To get the hash for a given set of download options, pass the options to
+     * `calculateFridaSRI({ version, arch, platform })` to fetch & calculate a current hash directly.
+     */
+    sri?: string;
 }
 
 export async function downloadFridaServer(options: FridaDownloadOptions) {
-    const { version, platform, arch, ghToken } = options;
+    const { version, platform, arch, sri, ghToken } = options;
+
+    if (sri && (!version || version === 'latest' || !platform || !arch)) {
+        throw new Error(
+            'SRI cannot be used to download Frida unless fixed version, platform & arch values are provided'
+        );
+    }
 
     const releaseDetails = await getFridaReleaseDetails(
         version,
@@ -72,7 +94,7 @@ export async function downloadFridaServer(options: FridaDownloadOptions) {
         arch: arch || os.arch()
     });
 
-    return fetchFridaServer(downloadUrl);
+    return fetchFridaServer(downloadUrl, sri);
 }
 
 export async function getFridaReleaseDetails(version?: string, ghToken?: string): Promise<any> {
@@ -95,6 +117,37 @@ export async function getFridaReleaseDetails(version?: string, ghToken?: string)
     }
 
     return response.json();
+}
+
+export type CalculateSRIOptions = Pick<FridaDownloadOptions, 'ghToken'> &
+    Required<Pick<FridaDownloadOptions, 'version' | 'arch' | 'platform'>>;
+
+/**
+ * Calculates an SRI value for the given parameters, on a trust-on-first-download basis.
+ *
+ * This fetches and extracts the Frida server for the given parameters, and calculates the
+ * SRI details for the given content. Optionally, specific preferred hash algorithms can
+ * be provided if required.
+ *
+ * This returns a promise, resolving to an array of strings, one for each algorithm used.
+ * Any of these values can be used as an SRI argument for `downloadFridaServer`.
+ */
+export async function calculateFridaSRI(
+    options: CalculateSRIOptions,
+    hashOptions: { algorithms?: string[] } = {}
+): Promise<string[]> {
+    if (!options.version || options.version === 'latest' || !options.arch || !options.platform) {
+        throw new Error('Cannot calculate SRI without fixed version, platform & arch values');
+    }
+
+    // We import SSRI on demand, just when it's required, to avoid bundling in browsers etc.
+    const SSRI = await import('ssri');
+
+    const fridaStream = await downloadFridaServer(options);
+
+    const results = await SSRI.fromStream(fridaStream, hashOptions);
+
+    return Object.values(results).flatMap((hash) => hash.toString());
 }
 
 function findFridaDownloadUrl(
@@ -122,9 +175,19 @@ function findFridaDownloadUrl(
 }
 
 async function fetchFridaServer(
-    downloadUrl: string
+    downloadUrl: string,
+    sri?: string
 ): Promise<Readable> {
-    const resultStream = new PassThrough();
+    // We delay these imports until here, since they're not needed in most cases (where
+    // you're not downloading) and they can be heavy, so good to avoid in browser bundles:
+    const [{ XzReadableStream }, SSRI] = await Promise.all([
+        import('xz-decompress'),
+        import('ssri')
+    ]);
+
+    const resultStream = sri
+        ? SSRI.integrityStream({ integrity: sri })
+        : new PassThrough();
 
     const assetDownload = await fetch(downloadUrl);
     if (!assetDownload.ok) {

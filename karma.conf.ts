@@ -18,7 +18,8 @@ module.exports = function(config: any) {
     config.set({
         frameworks: ['mocha', 'chai'],
         files: [
-            'test/**/*.spec.ts'
+            // We only run the main test file - we skip the download tests, which are node-only
+            'test/test.spec.ts'
         ],
         preprocessors: {
             'src/**/*.ts': ['esbuild'],

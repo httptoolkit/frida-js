@@ -6,6 +6,7 @@ import { DBusVariantDict, NestedStringDict, parseDBusVariantDict } from './dbus-
 
 export {
     getFridaReleaseDetails,
+    calculateFridaSRI,
     downloadFridaServer
 } from './download-frida';
 
