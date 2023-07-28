@@ -81,7 +81,7 @@ await fridaClient.spawnWithScript(
 
 To connect to a remote instance (such as a mobile device) you can pass options to `connect()`, such as `connect({ host: 'localhost:27042' })`.
 
-See the full API reference below for more details of the Frida APIs exposed, or see the test suite for a selection of working examples, and fixtures to test against.
+See the full API reference below for more details of the Frida APIs exposed, or see the test suite for a selection of working examples, and fixture binaries to test against. The code for the fixtures is also provided (in `test/fixture-setup`). Each fixture is a tiny Rust application that can be built by running `cargo build` in its directory (assuming you have a Rust toolchain installed locally).
 
 ## Frida Caveats
 
