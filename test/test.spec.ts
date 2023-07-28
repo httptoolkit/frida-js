@@ -96,7 +96,7 @@ describe("Frida-JS", () => {
 
         await delay(100); // Wait momentarily for the server to start listening
 
-        const resultingResponse = await fetch('http://localhost:3000');
+        const resultingResponse = await fetch('http://127.0.0.1:3000');
         const resultingMessage = await resultingResponse.text();
 
         expect(resultingMessage).to.equal('INJECTED');
