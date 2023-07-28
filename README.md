@@ -16,6 +16,10 @@ Using this library you can:
 * Attach to an existing running process, and inject arbitrary code
 * Launch a new process, injecting arbitrary code to run before it starts
 
+This library is part of [a broader HTTP Toolkit project](https://httptoolkit.com/blog/frida-mobile-interception-funding/), which is funded by [NLNet](https://nlnet.nl/) as part of their [NGI Zero Entrust](https://nlnet.nl/entrust/) programme.
+
+<img src="https://nlnet.nl/logo/banner.png" width="200" alt="NLNet logo"> <img src="https://nlnet.nl/image/logos/NGI0Entrust_tag.svg" width="200" alt="NGI Zero Entrust logo">
+
 ## Getting Started
 
 ```bash
