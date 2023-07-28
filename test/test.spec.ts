@@ -36,7 +36,7 @@ describe("Frida-JS", () => {
 
     it("can connect to a Frida instance by address", async () => {
         try {
-            await connect({ host: 'localhost:12345' });
+            await connect({ host: '127.0.0.1:12345' });
             throw new Error('Should not connect successfully');
         } catch (e: any) {
             // This is expected. We can only check the error in Node though, as browsers
@@ -46,7 +46,7 @@ describe("Frida-JS", () => {
             }
         }
 
-        fridaClient = await connect({ host: 'localhost:27042' });
+        fridaClient = await connect({ host: '127.0.0.1:27042' });
         expect((await fridaClient.enumerateProcesses()).length).to.be.greaterThan(0);
     });
 

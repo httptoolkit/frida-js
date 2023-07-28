@@ -114,7 +114,7 @@ It's technically possible to call this method from a browser, but you'd rarely w
 
 Connects to a local Frida server, and returns a promise for a FridaClient.
 
-Options must be an object containing the connection parameters. `host` is the only parameter currently supported, and must be set to the hostname and (optional) port string for the target Frida instance. If not set, it defaults to `localhost:27042`.
+Options must be an object containing the connection parameters. `host` is the only parameter currently supported, and must be set to the hostname and (optional) port string for the target Frida instance. If not set, it defaults to `127.0.0.1:27042`.
 
 ### `fridaClient.queryMetadata()`
 

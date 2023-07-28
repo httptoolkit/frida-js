@@ -14,7 +14,7 @@ const DEFAULT_FRIDA_PORT = 27042;
 export async function connect(options: {
     host?: string
 } = {}) {
-    const fridaHost = options.host || `localhost:${DEFAULT_FRIDA_PORT}`;
+    const fridaHost = options.host || `127.0.0.1:${DEFAULT_FRIDA_PORT}`;
 
     const socket = new WebSocket(`ws://${fridaHost}/ws`);
     socket.binaryType = 'arraybuffer';
