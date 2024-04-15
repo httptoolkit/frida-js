@@ -30,7 +30,8 @@ module.exports = function(config: any) {
             target: 'esnext',
             external: [
                 './test/run-frida-server',
-                'child_process'
+                'child_process',
+                'net'
             ],
             define: {
                 'process.env.FIXTURES_PATH': JSON.stringify(path.join(__dirname, 'test', 'fixtures')),

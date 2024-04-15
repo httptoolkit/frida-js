@@ -1,3 +1,4 @@
+import type * as stream from 'stream';
 import WebSocket = require('isomorphic-ws');
 import createWebSocketStream = require('@httptoolkit/websocket-stream');
 import dbus = require('@httptoolkit/dbus-native');
@@ -12,12 +13,11 @@ export {
 
 const DEFAULT_FRIDA_PORT = 27042;
 
-export async function connect(options: {
-    host?: string
-} = {}) {
-    const fridaHost = options.host || `127.0.0.1:${DEFAULT_FRIDA_PORT}`;
 
-    const socket = new WebSocket(`ws://${fridaHost}/ws`);
+const connectFridaWebSocket = async (fridaHost: string, options?: {
+    createConnection?: () => stream.Duplex
+}) => {
+    const socket = new WebSocket(`ws://${fridaHost}/ws`, options);
     socket.binaryType = 'arraybuffer';
 
     await new Promise((resolve, reject) => {
@@ -25,8 +25,24 @@ export async function connect(options: {
         socket.addEventListener('error', reject);
     });
 
+    return socket;
+}
+
+export async function connect(options:
+    | { host?: string, stream?: undefined }
+    // Note that providing a stream directly is supported on Node only
+    | { stream?: stream.Duplex, host?: undefined }= {}
+) {
+    const fridaHost = options.host || `127.0.0.1:${DEFAULT_FRIDA_PORT}`;
+
+    const webSocket = options.stream
+        ? await connectFridaWebSocket(fridaHost, {
+            createConnection: () => options.stream!
+        })
+        : await connectFridaWebSocket(fridaHost);
+
     const bus = dbus.createClient({
-        stream: createWebSocketStream(socket),
+        stream: createWebSocketStream(webSocket),
         direct: true,
         authMethods: []
     });

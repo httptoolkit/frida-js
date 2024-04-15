@@ -2,6 +2,7 @@ import('./frida-test-setup');
 
 import * as ChildProc from 'child_process';
 import * as path from 'path';
+import * as net from 'net';
 import { expect } from 'chai';
 
 import { fetch } from 'cross-fetch';
@@ -103,6 +104,21 @@ describe("Frida-JS", () => {
     });
 
     if (isNode) {
+        it("can connect to a Frida instance by raw stream", async () => {
+            const socket = net.createConnection({
+                host: '127.0.0.1',
+                port: 27042
+            });
+
+            await new Promise((resolve, reject) => {
+                socket.on('connect', resolve);
+                socket.on('error', reject);
+            });
+
+            fridaClient = await connect({ stream: socket, host: 'localhost:12345' as any });
+            expect((await fridaClient.enumerateProcesses()).length).to.be.greaterThan(0);
+        });
+
         it("can inject into a target process", async () => {
             // Start a demo subprocess to inject into:
             const childProc = ChildProc.spawn(
