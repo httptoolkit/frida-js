@@ -163,8 +163,15 @@ The exact parameters returned may vary and will depend on the specific target sy
 
 ### `fridaClient.enumerateProcesses()`
 
-Returns a promise for an array of `[pid: number, processName: string]` pairs. You can use this to query the currently running processes that can be targeted on your local machine.
+Returns a promise for an array of `{ pid: number, processName: string }` objects. You can use this to query the currently running processes that can be targeted from the target Frida server.
 
+### `fridaClient.enumerateApplications()`
+
+Returns a promise for an array of `{ pid: number | null, id: string, name: string }` objects. You can use this to query all installed applications (running or not) that can be targeted on a target mobile device.
+
+The pid will be `null` if the app is not running, or a numeric process id otherwise. The id is the internal app identifier (e.g. Android package id) while the name is the user-visible application name.
+
+This will always return an empty list on non-mobile devices.
 
 ### `fridaClient.injectIntoProcess(pid: number, script: string)`
 

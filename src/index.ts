@@ -52,7 +52,8 @@ export async function connect(options:
 
 interface HostSession {
     QuerySystemParameters(): Promise<DBusVariantDict>;
-    EnumerateProcesses(arg: {}): Promise<Array<[number, string]>>;
+    EnumerateProcesses(arg: {}): Promise<Array<[pid: number, name: string]>>;
+    EnumerateApplications(arg: {}): Promise<Array<[id: string, name: string, pid: number | 0]>>;
     Attach(pid: number, options: {}): Promise<[string]>;
     Spawn(program: string, options: [
         hasArgv: boolean,
@@ -107,14 +108,38 @@ export class FridaSession {
         return parseDBusVariantDict(rawMetadata);
     }
 
-
     /**
      * List all running processes accessible to the target Frida server. Returns an array
-     * of [pid, process name] pairs.
+     * of { pid, name } objects.
      */
-    async enumerateProcesses(): Promise<Array<[number, string]>> {
+    async enumerateProcesses(): Promise<Array<{
+        pid: number,
+        name: string
+    }>> {
         const hostSession = await this.getHostSession();
-        return hostSession.EnumerateProcesses({});
+        return (await hostSession.EnumerateProcesses({})).map((proc) => ({
+            pid: proc[0],
+            name: proc[1]
+        }));
+    }
+
+    /**
+     * List all installed applications accessible on the target Frida server. Returns an array of
+     * { pid, id, name } objects, where pid is null if the application is not currently running.
+     *
+     * This is only applicable to mobile devices, and will return an empty array everywhere else.
+     */
+    async enumerateApplications(): Promise<Array<{
+        pid: number | null,
+        id: string,
+        name: string
+    }>> {
+        const hostSession = await this.getHostSession();
+        return (await hostSession.EnumerateApplications({})).map((proc) => ({
+            pid: proc[2] || null, // Not running = 0. We map it to null.
+            id: proc[0],
+            name: proc[1]
+        }));
     }
 
     /**

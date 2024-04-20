@@ -35,16 +35,26 @@ describe("Frida-JS", () => {
         spawnedProc = undefined;
     })
 
-    it("can connect to Frida and list targets", async () => {
+    it("can connect to Frida and list target processes", async () => {
         fridaClient = await connect();
         const processes = await fridaClient.enumerateProcesses();
 
         expect(processes.length).to.be.greaterThan(0);
 
         if (isNode) {
-            const thisProcess = processes.find(([pid]) => pid === process.pid)!;
-            expect(thisProcess[1]).to.equal('node');
+            const thisProcess = processes.find(({ pid }) => pid === process.pid)!;
+            expect(thisProcess.name).to.equal('node');
         }
+    });
+
+    it("can connect to Frida and list target apps", async () => {
+        fridaClient = await connect();
+
+        const processes = await fridaClient.enumerateApplications();
+
+        // This should work, but won't actually return anything in local testing
+        // because it's only applicable to mobile devices.
+        expect(processes.length).to.equal(0);
     });
 
     it("can connect to a Frida instance by address", async () => {
