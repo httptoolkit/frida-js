@@ -54,7 +54,7 @@
     "@types/ssri": "^7.1.1",
     "chai": "^4.3.7",
     "cross-fetch": "^3.1.5",
-    "esbuild": "^0.16.17",
+    "esbuild": "^0.17.19",
     "karma": "^6.4.2",
     "karma-chai": "^0.1.0",
     "karma-chrome-launcher": "^3.2.0",
