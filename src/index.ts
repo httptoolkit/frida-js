@@ -47,6 +47,10 @@ export async function connect(options:
         authMethods: []
     });
 
+    // bus.self.connection.on("message", console.log);
+
+    // bus.signals.on("message", console.log);
+
     return new FridaSession(bus);
 }
 
@@ -73,6 +77,12 @@ interface AgentSession {
     LoadScript(scriptId: [number]): Promise<void>;
 }
 
+type AgentMessage = [number, number[], json: string, has_data: boolean, data: Buffer | null]
+export type ScriptAgentMessage = {
+    type: "send",
+    payload: any
+}
+
 export class FridaSession {
 
     constructor(
@@ -96,6 +106,16 @@ export class FridaSession {
         return this.bus
             .getService('re.frida.AgentSession16')
             .getInterface<AgentSession>('/re/frida/AgentSession/' + sessionId, 're.frida.AgentSession16');
+    }
+
+    private listenToAgentMessages(sessionId: string, cb: (message: ScriptAgentMessage) => void){
+        this.bus.setMethodCallHandler(`/re/frida/AgentMessageSink/${sessionId}`, "re.frida.AgentMessageSink16", "PostMessages", [(messages: AgentMessage[]) => {
+            for(const message of messages) { // ScriptMessage 
+                if(message[0] === 1) {
+                    return cb(JSON.parse(message[2]));
+                }
+            }
+        }, null]);
     }
 
     /**
@@ -157,6 +177,8 @@ export class FridaSession {
 
         const scriptId = await agentSession.CreateScript(fridaScript, {});
         await agentSession.LoadScript(scriptId);
+
+        return sessionId;
     }
 
     /**
@@ -194,4 +216,7 @@ export class FridaSession {
         await hostSession.Resume(pid);
     }
 
+    async listenToSession(id: string, cb: (message: ScriptAgentMessage) => void) {
+        this.listenToAgentMessages(id, cb);
+    }
 }

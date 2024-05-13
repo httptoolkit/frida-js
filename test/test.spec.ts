@@ -8,7 +8,7 @@ import { expect } from 'chai';
 import { fetch } from 'cross-fetch';
 
 import { delay, isNode } from './test-util';
-import { connect, FridaSession } from '../src/index';
+import { connect, FridaSession, ScriptAgentMessage } from '../src/index';
 
 const FIXTURES_BASE = isNode
     ? path.join(__dirname, 'fixtures')
@@ -222,6 +222,67 @@ describe("Frida-JS", () => {
 
             expect(exitCode).to.equal(0);
             expect(output).to.equal('Hello from injected script!\n');
+        });
+
+        it("can get the send message from agent", async () => {
+            // Start a demo subprocess to inject into:
+            const childProc = ChildProc.spawn(
+                // Fixture that loops until should_continue() returns false (which it never does).
+                // Source is in fixtures-setup/rust-loop.
+                path.join(__dirname, 'fixtures', `loop-${process.platform}-${process.arch}${process.platform === 'win32' ? '.exe' : ''}`),
+                { stdio: 'pipe' }
+            );
+            childProc.unref();
+            spawnedProc = childProc; // Ensure this is killed after testing
+
+            const outputPromise = new Promise<{
+                exitCode: number | null,
+                output: string
+            }>((resolve, reject) => {
+                let output = '';
+                childProc.stdout.on('data', (msg) => output += msg.toString());
+                childProc.stderr.on('data', (msg) => output += msg.toString());
+                childProc.stdout.pipe(process.stdout);
+                childProc.stderr.pipe(process.stderr);
+                childProc.on('close', (exitCode) => resolve({ exitCode, output }));
+                childProc.on('error', reject);
+            });
+
+            // Wait for the target to start up:
+            await new Promise((resolve, reject) => {
+                childProc.on('spawn', resolve);
+                childProc.on('error', reject);
+            });
+
+            // Inject into it:
+            const expectedMessage = 'Hello from injected script!';
+            fridaClient = await connect();
+            const id = await fridaClient.injectIntoProcess(childProc.pid!, `
+                setTimeout(() => {
+                    send('${expectedMessage}');
+                }, 1000);
+            `);
+
+            let message: ScriptAgentMessage = null!;
+            fridaClient.listenToSession(id, (msg) => {
+                message = msg;
+            });
+
+            await new Promise<void>((resolve, reject) => {
+                const interval = setInterval(() => {
+                    if (message) {
+                        resolve();
+                    }
+                }, 100);
+                setTimeout(() => {
+                    clearInterval(interval);
+                    reject(new Error('Timed out waiting for message'));
+                }, 5000);
+            });
+
+            // Inject into it:
+            expect(message).to.not.be.null;
+            expect(message.payload).to.equal(expectedMessage);
         });
     }
 
