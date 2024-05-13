@@ -47,10 +47,6 @@ export async function connect(options:
         authMethods: []
     });
 
-    // bus.self.connection.on("message", console.log);
-
-    // bus.signals.on("message", console.log);
-
     return new FridaSession(bus);
 }
 
