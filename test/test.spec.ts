@@ -260,32 +260,21 @@ describe("Frida-JS", () => {
             // Inject into it:
             const expectedMessage = 'Hello from injected script!';
             fridaClient = await connect();
-            const id = await fridaClient.injectIntoProcess(childProc.pid!, `
+            const data = await fridaClient.injectIntoProcess(childProc.pid!, `
                 setTimeout(() => {
                     send('${expectedMessage}');
                 }, 1000);
             `);
 
-            let message: ScriptAgentMessage = null!;
-            fridaClient.listenToSession(id, (msg) => {
-                message = msg;
-            });
-
-            await new Promise<void>((resolve, reject) => {
-                const interval = setInterval(() => {
-                    if (message) {
-                        resolve();
-                    }
-                }, 100);
+            let message = await new Promise<ScriptAgentMessage | null>((resolve, reject) => {
+                data.session.onMessage(resolve);
                 setTimeout(() => {
-                    clearInterval(interval);
                     reject(new Error('Timed out waiting for message'));
                 }, 5000);
             });
 
             // Inject into it:
-            expect(message).to.not.be.null;
-            expect(message.payload).to.equal(expectedMessage);
+            expect(message?.payload).to.equal(expectedMessage);
         });
     }
 

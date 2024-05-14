@@ -73,10 +73,23 @@ interface AgentSession {
     LoadScript(scriptId: [number]): Promise<void>;
 }
 
-type AgentMessage = [number, number[], json: string, has_data: boolean, data: Buffer | null]
+/**
+ * A message from a Frida script to the runner.
+ * https://github.com/frida/frida-core/blob/main/lib/base/session.vala#L124C2-L146C3
+ * kind is the AgentMessageKind, "1" is a script message. There is also Debugger but no enum number is specified.
+ * script_id is the script id that sent the message. It is part of the AgentScriptId type.
+ * text is the message in plain text.
+ * has_data is a boolean that indicates if there is data attached to the message.
+ * data is the data attached to the message. It is a byte array.
+ */
+type AgentMessage = [kind: number, script_id: number[], text: string, has_data: boolean, data: Buffer | null]
 export type ScriptAgentMessage = {
     type: "send",
     payload: any
+}
+enum AgentMessageKind {
+    Script = 1,
+    Debugger = 2 // No enum number is specified in the source code. This is a guess.
 }
 
 export class FridaSession {
@@ -98,20 +111,11 @@ export class FridaSession {
         .getInterface<HostSession>('/re/frida/HostSession', 're.frida.HostSession16');
     }
 
-    private getAgentSession(sessionId: string) {
-        return this.bus
+    private async getAgentSession(sessionId: string) {
+        const agentSession = await this.bus
             .getService('re.frida.AgentSession16')
             .getInterface<AgentSession>('/re/frida/AgentSession/' + sessionId, 're.frida.AgentSession16');
-    }
-
-    private listenToAgentMessages(sessionId: string, cb: (message: ScriptAgentMessage) => void){
-        this.bus.setMethodCallHandler(`/re/frida/AgentMessageSink/${sessionId}`, "re.frida.AgentMessageSink16", "PostMessages", [(messages: AgentMessage[]) => {
-            for(const message of messages) { // ScriptMessage 
-                if(message[0] === 1) {
-                    return cb(JSON.parse(message[2]));
-                }
-            }
-        }, null]);
+        return new FridaAgentSession(this.bus, sessionId, agentSession);
     }
 
     /**
@@ -171,10 +175,13 @@ export class FridaSession {
         const [sessionId] = await hostSession.Attach(pid, {});
         const agentSession = await this.getAgentSession(sessionId);
 
-        const scriptId = await agentSession.CreateScript(fridaScript, {});
-        await agentSession.LoadScript(scriptId);
+        const script = await agentSession.createScript(fridaScript, {});
+        await script.loadScript();
 
-        return sessionId;
+        return {
+            session: agentSession,
+            script
+        }
     }
 
     /**
@@ -206,13 +213,64 @@ export class FridaSession {
         const [sessionId] = await hostSession.Attach(pid, {});
         const agentSession = await this.getAgentSession(sessionId);
 
-        const scriptId = await agentSession.CreateScript(fridaScript, {});
-        await agentSession.LoadScript(scriptId);
+        const script = await agentSession.createScript(fridaScript, {});
+        await script.loadScript();
 
         await hostSession.Resume(pid);
+        return {
+            pid,
+            session: agentSession,
+            script
+        }
+    }
+}
+
+export class FridaAgentSession {
+    constructor(
+        private bus: dbus.DBusClient,
+        private sessionId: string,
+        private agentSession: AgentSession
+    ) {}
+
+    /**
+     * This method sets up a message handler for messages sent from the agent.
+     * @param cb Callback to be called when a message is received from the agent.
+     */
+    onMessage(cb: (message: ScriptAgentMessage) => void) {
+        this.bus.setMethodCallHandler(`/re/frida/AgentMessageSink/${this.sessionId}`, "re.frida.AgentMessageSink16", "PostMessages", [(messages: AgentMessage[]) => {
+            for(const message of messages) {
+                switch(message[0]) { // message[0] is the message kind
+                    case AgentMessageKind.Script:
+                        cb(JSON.parse(message[2])) // message[2] is the text message (Frida script message is a JSON string)
+                        break;
+                }
+            }
+        }, null]);
     }
 
-    async listenToSession(id: string, cb: (message: ScriptAgentMessage) => void) {
-        this.listenToAgentMessages(id, cb);
+    /**
+     * Create a new Frida script within this agent session.
+     * @param script The Frida script in plain text to create.
+     * @param options Options to pass to the script.
+     */
+    async createScript(script: string, options: {}): Promise<FridaScript> {
+        const [scriptId] = await this.agentSession.CreateScript(script, options);
+        return new FridaScript(this.bus, this.agentSession, [scriptId]);
+    }
+}
+
+export class FridaScript {
+    constructor(
+        private bus: dbus.DBusClient,
+        private agentSession: AgentSession,
+        private scriptId: [number],
+    ) {}
+
+    /**
+     * Load the script into the target process.
+     * @returns Promise that resolves when the script is loaded.
+     */
+    async loadScript() {
+        return this.agentSession.LoadScript(this.scriptId);
     }
 }
