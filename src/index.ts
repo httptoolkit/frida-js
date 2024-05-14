@@ -83,9 +83,26 @@ interface AgentSession {
  * data is the data attached to the message. It is a byte array.
  */
 type AgentMessage = [kind: number, script_id: number[], text: string, has_data: boolean, data: Buffer | null]
-export type ScriptAgentMessage = {
-    type: "send",
+enum MessageType {
+    Send = "send",
+    Error = "error"
+}
+/**
+ * A message sent from a script to the agent.
+ * https://github.com/frida/frida-node/blob/main/lib/script.ts#L103-L115
+ */
+type Message = ScriptAgentSendMessage | ScriptAgentErrorMessage;
+export type ScriptAgentSendMessage = {
+    type: MessageType,
     payload: any
+}
+export type ScriptAgentErrorMessage = {
+    type: MessageType.Error;
+    description: string;
+    stack?: string;
+    fileName?: string;
+    lineNumber?: number;
+    columnNumber?: number;
 }
 enum AgentMessageKind {
     Script = 1,
@@ -236,12 +253,13 @@ export class FridaAgentSession {
      * This method sets up a message handler for messages sent from the agent.
      * @param cb Callback to be called when a message is received from the agent.
      */
-    onMessage(cb: (message: ScriptAgentMessage) => void) {
+    onMessage(cb: (message: Message) => void) {
         this.bus.setMethodCallHandler(`/re/frida/AgentMessageSink/${this.sessionId}`, "re.frida.AgentMessageSink16", "PostMessages", [(messages: AgentMessage[]) => {
             for(const message of messages) {
+                const msg = JSON.parse(message[2]) as Message;
                 switch(message[0]) { // message[0] is the message kind
                     case AgentMessageKind.Script:
-                        cb(JSON.parse(message[2])) // message[2] is the text message (Frida script message is a JSON string)
+                        cb(msg)
                         break;
                 }
             }

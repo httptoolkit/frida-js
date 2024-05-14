@@ -8,7 +8,7 @@ import { expect } from 'chai';
 import { fetch } from 'cross-fetch';
 
 import { delay, isNode } from './test-util';
-import { connect, FridaSession, ScriptAgentMessage } from '../src/index';
+import { connect, FridaSession, ScriptAgentSendMessage } from '../src/index';
 
 const FIXTURES_BASE = isNode
     ? path.join(__dirname, 'fixtures')
@@ -266,7 +266,7 @@ describe("Frida-JS", () => {
                 }, 1000);
             `);
 
-            let message = await new Promise<ScriptAgentMessage | null>((resolve, reject) => {
+            let message = await new Promise<ScriptAgentSendMessage | null>((resolve, reject) => {
                 data.session.onMessage(resolve);
                 setTimeout(() => {
                     reject(new Error('Timed out waiting for message'));
