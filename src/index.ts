@@ -83,15 +83,17 @@ interface AgentSession {
  * data is the data attached to the message. It is a byte array.
  */
 type AgentMessage = [kind: number, script_id: number[], text: string, has_data: boolean, data: Buffer | null]
-enum MessageType {
-    Send = "send",
-    Error = "error"
-}
+
 /**
  * A message sent from a script to the agent.
  * https://github.com/frida/frida-node/blob/main/lib/script.ts#L103-L115
  */
-type Message = ScriptAgentSendMessage | ScriptAgentErrorMessage;
+export enum MessageType {
+    Send = "send",
+    Error = "error"
+}
+
+export type Message = ScriptAgentSendMessage | ScriptAgentErrorMessage;
 export type ScriptAgentSendMessage = {
     type: MessageType,
     payload: any
