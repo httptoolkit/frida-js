@@ -5,7 +5,7 @@ import { delay } from './test-util';
 let fridaServer: ChildProcess | undefined;
 
 export const FRIDA_SERVER_DIR = path.join(__dirname, '.frida-server');
-export const FRIDA_SERVER_BIN = path.join(FRIDA_SERVER_DIR, 'frida-server');
+export const FRIDA_SERVER_BIN = path.join(FRIDA_SERVER_DIR, 'frida-server.exe');
 
 export async function startFridaServer() {
     if (fridaServer) throw new Error("Can't start Frida server when one is already running");
