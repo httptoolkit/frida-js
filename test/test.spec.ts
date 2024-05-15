@@ -220,7 +220,7 @@ describe("Frida-JS", () => {
             fridaClient = await connect();
             await fridaClient.injectIntoNodeJSProcess(
                 childNodeProc.pid!,
-                'console.log("Hello from injected script!"); process.exit(0);'
+                'setTimeout(() => { console.log("Hello from injected script!"); process.exit(0); }, 100);'
             );
 
             console.log(`Injected completed after ${Date.now() - startTime}ms`);
