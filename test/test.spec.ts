@@ -183,7 +183,9 @@ describe("Frida-JS", () => {
             expect(output.slice(-13)).to.equal('Running\nDone\n');
         });
 
-        it("can inject into a target node process", async () => {
+        it("can inject into a target node process", async function () {
+            this.timeout(5000);
+
             // Start a Node subprocess to inject into:
             const childNodeProc = ChildProc.spawn(
                 process.execPath,
@@ -210,6 +212,7 @@ describe("Frida-JS", () => {
                 childNodeProc.on('spawn', resolve);
                 childNodeProc.on('error', reject);
             });
+            await delay(10); // Give the process time to start
 
             // Inject into it:
             fridaClient = await connect();
