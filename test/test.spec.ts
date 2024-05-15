@@ -215,13 +215,13 @@ describe("Frida-JS", () => {
             });
 
             console.log(`Process started in ${Date.now() - startTime}ms`);
-            await delay(50);
+            await delay(10);
 
             // Inject into it:
             fridaClient = await connect();
             await fridaClient.injectIntoNodeJSProcess(
                 childNodeProc.pid!,
-                'setTimeout(() => { console.log("Hello from injected script!"); process.exit(0); }, 100);'
+                'console.log("Hello from injected script!"); process.exit(0);'
             );
 
             console.log(`Injected completed after ${Date.now() - startTime}ms`);
