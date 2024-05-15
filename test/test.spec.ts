@@ -186,6 +186,7 @@ describe("Frida-JS", () => {
         for (let i = 0; i < 100; i++) {
             it(`can inject into a target node process (${i})`, async function () {
                 this.timeout(5000);
+                delay(10);
                 const startTime = Date.now();
 
                 // Start a Node subprocess to inject into:
