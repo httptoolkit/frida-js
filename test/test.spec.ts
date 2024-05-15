@@ -183,56 +183,58 @@ describe("Frida-JS", () => {
             expect(output.slice(-13)).to.equal('Running\nDone\n');
         });
 
-        it("can inject into a target node process", async function () {
-            this.timeout(5000);
-            const startTime = Date.now();
+        for (let i = 0; i < 100; i++) {
+            it(`can inject into a target node process (${i})`, async function () {
+                this.timeout(5000);
+                const startTime = Date.now();
 
-            // Start a Node subprocess to inject into:
-            const childNodeProc = ChildProc.spawn(
-                process.execPath,
-                // Run node silently for 1 second, then exit unhappily:
-                ['-e', 'setTimeout(() => { process.exit(1); }, 1000)'],
-                { stdio: 'pipe' }
-            );
-            childNodeProc.unref();
-            spawnedProc = childNodeProc; // Ensure this is killed after testing
+                // Start a Node subprocess to inject into:
+                const childNodeProc = ChildProc.spawn(
+                    process.execPath,
+                    // Run node silently for 1 second, then exit unhappily:
+                    ['-e', 'setTimeout(() => { process.exit(1); }, 1000)'],
+                    { stdio: 'pipe' }
+                );
+                childNodeProc.unref();
+                spawnedProc = childNodeProc; // Ensure this is killed after testing
 
-            const outputPromise = new Promise<{
-                exitCode: number | null,
-                output: string
-            }>((resolve, reject) => {
-                let output = '';
-                childNodeProc.stdout.on('data', (msg) => output += msg.toString());
-                childNodeProc.stderr.on('data', (msg) => output += msg.toString());
-                childNodeProc.on('close', (exitCode) => resolve({ exitCode, output }));
-                childNodeProc.on('error', reject);
+                const outputPromise = new Promise<{
+                    exitCode: number | null,
+                    output: string
+                }>((resolve, reject) => {
+                    let output = '';
+                    childNodeProc.stdout.on('data', (msg) => output += msg.toString());
+                    childNodeProc.stderr.on('data', (msg) => output += msg.toString());
+                    childNodeProc.on('close', (exitCode) => resolve({ exitCode, output }));
+                    childNodeProc.on('error', reject);
+                });
+
+                // Wait for the target to start up:
+                await new Promise((resolve, reject) => {
+                    childNodeProc.on('spawn', resolve);
+                    childNodeProc.on('error', reject);
+                });
+
+                console.log(`Process started in ${Date.now() - startTime}ms`);
+                await delay(10);
+
+                // Inject into it:
+                fridaClient = await connect();
+                await fridaClient.injectIntoNodeJSProcess(
+                    childNodeProc.pid!,
+                    'console.log("Hello from injected script!"); process.exit(0);'
+                );
+
+                console.log(`Injected completed after ${Date.now() - startTime}ms`);
+
+                const { exitCode, output } = await outputPromise;
+
+                console.log(`Process exited after ${Date.now() - startTime}ms`);
+
+                expect(exitCode).to.equal(0);
+                expect(output).to.equal('Hello from injected script!\n');
             });
-
-            // Wait for the target to start up:
-            await new Promise((resolve, reject) => {
-                childNodeProc.on('spawn', resolve);
-                childNodeProc.on('error', reject);
-            });
-
-            console.log(`Process started in ${Date.now() - startTime}ms`);
-            await delay(10);
-
-            // Inject into it:
-            fridaClient = await connect();
-            await fridaClient.injectIntoNodeJSProcess(
-                childNodeProc.pid!,
-                'console.log("Hello from injected script!"); process.exit(0);'
-            );
-
-            console.log(`Injected completed after ${Date.now() - startTime}ms`);
-
-            const { exitCode, output } = await outputPromise;
-
-            console.log(`Process exited after ${Date.now() - startTime}ms`);
-
-            expect(exitCode).to.equal(0);
-            expect(output).to.equal('Hello from injected script!\n');
-        });
+        }
 
         it("can get the send message from agent", async () => {
             // Start a demo subprocess to inject into:
