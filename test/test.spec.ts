@@ -217,7 +217,7 @@ describe("Frida-JS", () => {
                 });
 
                 console.log(`Process started in ${Date.now() - startTime}ms`);
-                await delay(10);
+                await delay(100);
 
                 // Inject into it:
                 fridaClient = await connect();
