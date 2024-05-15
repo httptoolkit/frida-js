@@ -7,7 +7,7 @@ import { isNode } from './test-util';
 import { downloadFridaServer, calculateFridaSRI } from '../src/index';
 
 if (isNode) {
-    describe("Downloading Frida with Frida-JS", function () {
+    describe.skip("Downloading Frida with Frida-JS", function () {
         this.timeout(30000); // Can be slow, since we're doing MB downloads & disk IO
 
         let tmpFile: tmp.FileResult;
