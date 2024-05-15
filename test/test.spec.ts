@@ -183,7 +183,7 @@ describe("Frida-JS", () => {
             expect(output.slice(-13)).to.equal('Running\nDone\n');
         });
 
-        it.only("can inject into a target node process", async function () {
+        it("can inject into a target node process", async function () {
             this.timeout(5000);
             const startTime = Date.now();
 
