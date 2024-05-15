@@ -190,12 +190,17 @@ export class FridaSession {
      */
     async injectIntoProcess(pid: number, fridaScript: string) {
         const hostSession = await this.getHostSession();
+        console.log('got host session');
 
         const [sessionId] = await hostSession.Attach(pid, {});
+        console.log('attached');
         const agentSession = await this.getAgentSession(sessionId);
+        console.log('got agent session');
 
         const script = await agentSession.createScript(fridaScript, {});
+        console.log('created script');
         await script.loadScript();
+        console.log('loaded script');
 
         return {
             session: agentSession,
