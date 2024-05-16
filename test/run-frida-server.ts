@@ -7,7 +7,7 @@ import { delay } from './test-util';
 let fridaServer: ChildProcess | undefined;
 
 export const FRIDA_SERVER_DIR = path.join(__dirname, '.frida-server');
-export const FRIDA_SERVER_BIN = path.join(FRIDA_SERVER_DIR, 'frida-server.exe');
+export const FRIDA_SERVER_BIN = path.join(FRIDA_SERVER_DIR, `frida-server${process.platform === 'win32' ? '.exe' : ''}`);
 
 const FRIDA_PORT = 27042;
 

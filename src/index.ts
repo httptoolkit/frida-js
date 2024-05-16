@@ -95,7 +95,7 @@ export enum MessageType {
 
 export type Message = ScriptAgentSendMessage | ScriptAgentErrorMessage;
 export type ScriptAgentSendMessage = {
-    type: MessageType,
+    type: MessageType.Send,
     payload: any
 }
 export type ScriptAgentErrorMessage = {
@@ -108,7 +108,7 @@ export type ScriptAgentErrorMessage = {
 }
 enum AgentMessageKind {
     Script = 1,
-    Debugger = 2 // No enum number is specified in the source code. This is a guess.
+    Debugger = 2,
 }
 
 export class FridaSession {
