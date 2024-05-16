@@ -212,6 +212,8 @@ describe("Frida-JS", () => {
                     childNodeProc.on('error', reject);
                 });
 
+                await delay(10); // Avoid race conditions that can make this flaky
+
                 // Inject into it:
                 fridaClient = await connect();
                 await fridaClient.injectIntoNodeJSProcess(
