@@ -184,11 +184,7 @@ describe("Frida-JS", () => {
         });
 
         for (let i = 0; i < 100; i++) {
-            it(`can inject into a target node process (${i})`, async function () {
-                this.timeout(5000);
-                delay(10);
-                const startTime = Date.now();
-
+            it(`can inject into a target node process (${i})`, async () => {
                 // Start a Node subprocess to inject into:
                 const childNodeProc = ChildProc.spawn(
                     process.execPath,
@@ -216,9 +212,6 @@ describe("Frida-JS", () => {
                     childNodeProc.on('error', reject);
                 });
 
-                console.log(`Process started in ${Date.now() - startTime}ms`);
-                await delay(100);
-
                 // Inject into it:
                 fridaClient = await connect();
                 await fridaClient.injectIntoNodeJSProcess(
@@ -226,11 +219,7 @@ describe("Frida-JS", () => {
                     'console.log("Hello from injected script!"); process.exit(0);'
                 );
 
-                console.log(`Injected completed after ${Date.now() - startTime}ms`);
-
                 const { exitCode, output } = await outputPromise;
-
-                console.log(`Process exited after ${Date.now() - startTime}ms`);
 
                 expect(exitCode).to.equal(0);
                 expect(output).to.equal('Hello from injected script!\n');
