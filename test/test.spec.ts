@@ -120,7 +120,7 @@ describe("Frida-JS", () => {
             path.join(FIXTURES_BASE, `serve-${process.platform}-${process.arch}`),
             [],
             // Run an example script that always crashes:
-            "setTimeout(() => { throw new Error('Intentional script failure error'); }, 100);"
+            "throw new Error('Intentional script failure error');"
         );
         const messages: any[] = [];
         session.onMessage((msg) => messages.push(msg));
@@ -134,9 +134,7 @@ describe("Frida-JS", () => {
             type: 'error',
             description: 'Error: Intentional script failure error',
             stack: 'Error: Intentional script failure error\n' +
-            '    at <anonymous> (/script1.js:1)\n' +
-            '    at apply (native)\n' +
-            '    at <anonymous> (frida/runtime/core.js:51)',
+            '    at <eval> (/script1.js:1)',
             fileName: '/script1.js',
             lineNumber: 1,
             columnNumber: 1
