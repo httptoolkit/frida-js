@@ -113,6 +113,36 @@ describe("Frida-JS", () => {
         expect(resultingMessage).to.equal('INJECTED');
     });
 
+    it("can receive script errors from a launched process", async () => {
+        // Launch a server process with a failing script injected
+        fridaClient = await connect();
+        const { session } = await fridaClient.spawnWithScript(
+            path.join(FIXTURES_BASE, `serve-${process.platform}-${process.arch}`),
+            [],
+            // Run an example script that always crashes:
+            "setTimeout(() => { throw new Error('Intentional script failure error'); }, 100);"
+        );
+        const messages: any[] = [];
+        session.onMessage((msg) => messages.push(msg));
+
+        await delay(100); // Wait momentarily for the server to start listening
+
+        const resultingResponse = await fetch('http://127.0.0.1:3000');
+        expect(resultingResponse.status).to.equal(200);
+
+        expect(messages).to.deep.equal([{
+            type: 'error',
+            description: 'Error: Intentional script failure error',
+            stack: 'Error: Intentional script failure error\n' +
+            '    at <anonymous> (/script1.js:1)\n' +
+            '    at apply (native)\n' +
+            '    at <anonymous> (frida/runtime/core.js:51)',
+            fileName: '/script1.js',
+            lineNumber: 1,
+            columnNumber: 1
+        }]);
+    });
+
     if (isNode) {
         it("can connect to a Frida instance by raw stream", async () => {
             const socket = net.createConnection({
