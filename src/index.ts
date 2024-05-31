@@ -197,7 +197,11 @@ export class FridaSession {
         const script = await agentSession.createScript(fridaScript, {});
 
         setTimeout(async () => {
-            await script.loadScript();
+            try {
+                await script.loadScript();
+            } catch (e) {
+                console.warn(e);
+            }
         }, 0);
 
         return {
@@ -238,8 +242,12 @@ export class FridaSession {
         const script = await agentSession.createScript(fridaScript, {});
 
         setTimeout(async () => {
-            await script.loadScript();
-            await hostSession.Resume(pid);
+            try {
+                await script.loadScript();
+                await hostSession.Resume(pid);
+            } catch (e) {
+                console.warn(e);
+            }
         }, 0);
 
         return {
