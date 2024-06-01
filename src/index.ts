@@ -198,7 +198,7 @@ export class FridaSession {
             async () => {} // Can't resume - process is already running
         );
 
-        const script = await agentSession.createScript(fridaScript, {});
+        const script = await agentSession.createScript(fridaScript);
 
         setTimeout(async () => {
             try {
@@ -257,7 +257,7 @@ export class FridaSession {
     async spawnWithScript(command: string, args: string[] | undefined, fridaScript: string) {
         const { session, pid } = await this.spawnPaused(command, args);
 
-        const script = await session.createScript(fridaScript, {});
+        const script = await session.createScript(fridaScript);
         setTimeout(async () => {
             try {
                 await script.loadScript();
@@ -305,7 +305,7 @@ export class FridaAgentSession {
      * @param script The Frida script in plain text to create.
      * @param options Options to pass to the script.
      */
-    async createScript(script: string, options: {}): Promise<FridaScript> {
+    async createScript(script: string, options: {} = {}): Promise<FridaScript> {
         const [scriptId] = await this.agentSession.CreateScript(script, options);
         return new FridaScript(this.bus, this.agentSession, [scriptId]);
     }
