@@ -131,11 +131,11 @@ export class FridaSession {
         .getInterface<HostSession>('/re/frida/HostSession', 're.frida.HostSession16');
     }
 
-    private async getAgentSession(sessionId: string) {
+    private async getAgentSession(sessionId: string, resumeCallback: () => Promise<void>) {
         const agentSession = await this.bus
             .getService('re.frida.AgentSession16')
             .getInterface<AgentSession>('/re/frida/AgentSession/' + sessionId, 're.frida.AgentSession16');
-        return new FridaAgentSession(this.bus, sessionId, agentSession);
+        return new FridaAgentSession(this.bus, sessionId, agentSession, resumeCallback);
     }
 
     /**
@@ -193,7 +193,10 @@ export class FridaSession {
         const hostSession = await this.getHostSession();
 
         const [sessionId] = await hostSession.Attach(pid, {});
-        const agentSession = await this.getAgentSession(sessionId);
+        const agentSession = await this.getAgentSession(
+            sessionId,
+            async () => {} // Can't resume - process is already running
+        );
 
         const script = await agentSession.createScript(fridaScript, {});
 
@@ -223,7 +226,7 @@ export class FridaSession {
         return this.injectIntoProcess(pid, fridaScript);
     }
 
-    async spawnWithScript(command: string, args: string[] | undefined, fridaScript: string) {
+    async spawnPaused(command: string, args: string[] | undefined) {
         const hostSession = await this.getHostSession();
 
         const argOptions: [boolean, Array<string>] = args
@@ -240,14 +243,25 @@ export class FridaSession {
         ]);
 
         const [sessionId] = await hostSession.Attach(pid, {});
-        const agentSession = await this.getAgentSession(sessionId);
+        const agentSession = await this.getAgentSession(
+            sessionId,
+            () => hostSession.Resume(pid)
+        );
 
-        const script = await agentSession.createScript(fridaScript, {});
+        return {
+            pid,
+            session: agentSession
+        }
+    }
 
+    async spawnWithScript(command: string, args: string[] | undefined, fridaScript: string) {
+        const { session, pid } = await this.spawnPaused(command, args);
+
+        const script = await session.createScript(fridaScript, {});
         setTimeout(async () => {
             try {
                 await script.loadScript();
-                await hostSession.Resume(pid);
+                await session.resume();
             } catch (e) {
                 console.warn(e);
             }
@@ -255,7 +269,7 @@ export class FridaSession {
 
         return {
             pid,
-            session: agentSession,
+            session,
             script
         }
     }
@@ -265,7 +279,8 @@ export class FridaAgentSession {
     constructor(
         private bus: dbus.DBusClient,
         private sessionId: string,
-        private agentSession: AgentSession
+        private agentSession: AgentSession,
+        private resumeCallback: () => Promise<void>
     ) {}
 
     /**
@@ -293,6 +308,10 @@ export class FridaAgentSession {
     async createScript(script: string, options: {}): Promise<FridaScript> {
         const [scriptId] = await this.agentSession.CreateScript(script, options);
         return new FridaScript(this.bus, this.agentSession, [scriptId]);
+    }
+
+    resume() {
+        return this.resumeCallback();
     }
 }
 
