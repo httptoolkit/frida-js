@@ -67,6 +67,7 @@ interface HostSession {
         aux: []
     ]): Promise<number>;
     Resume(pid: number): Promise<void>;
+    Kill(pid: number): Promise<void>;
 }
 
 interface AgentSession {
@@ -131,11 +132,11 @@ export class FridaSession {
         .getInterface<HostSession>('/re/frida/HostSession', 're.frida.HostSession16');
     }
 
-    private async getAgentSession(sessionId: string, resumeCallback: () => Promise<void>) {
+    private async getAgentSession(sessionId: string, pid: number, hostSession: HostSession) {
         const agentSession = await this.bus
             .getService('re.frida.AgentSession16')
             .getInterface<AgentSession>('/re/frida/AgentSession/' + sessionId, 're.frida.AgentSession16');
-        return new FridaAgentSession(this.bus, sessionId, agentSession, resumeCallback);
+        return new FridaAgentSession(this.bus, hostSession, pid, sessionId, agentSession);
     }
 
     /**
@@ -182,6 +183,17 @@ export class FridaSession {
         }));
     }
 
+    async attachToProcess(pid: number) {
+        const hostSession = await this.getHostSession();
+
+        const [sessionId] = await hostSession.Attach(pid, {});
+        const agentSession = await this.getAgentSession(sessionId, pid, hostSession);
+
+        return {
+            session: agentSession
+        };
+    }
+
     /**
      * Attach to a given pid and inject a Frida script to manipulate the target program.
      *
@@ -190,15 +202,9 @@ export class FridaSession {
      * need to run `sudo sysctl kernel.yama.ptrace_scope=0` first.
      */
     async injectIntoProcess(pid: number, fridaScript: string) {
-        const hostSession = await this.getHostSession();
+        const { session } = await this.attachToProcess(pid);
 
-        const [sessionId] = await hostSession.Attach(pid, {});
-        const agentSession = await this.getAgentSession(
-            sessionId,
-            async () => {} // Can't resume - process is already running
-        );
-
-        const script = await agentSession.createScript(fridaScript);
+        const script = await session.createScript(fridaScript);
 
         setTimeout(async () => {
             try {
@@ -209,7 +215,7 @@ export class FridaSession {
         }, 0);
 
         return {
-            session: agentSession,
+            session,
             script
         }
     }
@@ -243,10 +249,7 @@ export class FridaSession {
         ]);
 
         const [sessionId] = await hostSession.Attach(pid, {});
-        const agentSession = await this.getAgentSession(
-            sessionId,
-            () => hostSession.Resume(pid)
-        );
+        const agentSession = await this.getAgentSession(sessionId, pid, hostSession);
 
         return {
             pid,
@@ -278,9 +281,10 @@ export class FridaSession {
 export class FridaAgentSession {
     constructor(
         private bus: dbus.DBusClient,
+        private hostSession: HostSession,
+        private pid: number,
         private sessionId: string,
         private agentSession: AgentSession,
-        private resumeCallback: () => Promise<void>
     ) {}
 
     /**
@@ -311,7 +315,11 @@ export class FridaAgentSession {
     }
 
     resume() {
-        return this.resumeCallback();
+        return this.hostSession.Resume(this.pid);
+    }
+
+    kill() {
+        return this.hostSession.Kill(this.pid);
     }
 }
 

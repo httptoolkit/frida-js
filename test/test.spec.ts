@@ -305,6 +305,43 @@ describe("Frida-JS", () => {
             expect(message?.type).to.equal(MessageType.Send);
             expect((message as ScriptAgentSendMessage)?.payload).to.equal(expectedMessage);
         });
+
+        it("can kill a target process", async () => {
+            // Start a demo subprocess to kill:
+            const childProc = ChildProc.spawn(
+                // Fixture that loops until should_continue() returns false (which it never does).
+                // Source is in fixtures-setup/rust-loop.
+                path.join(__dirname, 'fixtures', `loop-${process.platform}-${process.arch}`),
+                { stdio: 'pipe' }
+            );
+            childProc.unref();
+            spawnedProc = childProc; // Ensure this is killed after testing
+
+            const outputPromise = new Promise<{
+                exitCode: number | null,
+                signal: NodeJS.Signals | null
+            }>((resolve, reject) => {
+                childProc.on('close', (exitCode, signal) => resolve({ exitCode, signal }));
+                childProc.on('error', reject);
+            });
+
+            // Wait for the target to start up:
+            await new Promise((resolve, reject) => {
+                childProc.on('spawn', resolve);
+                childProc.on('error', reject);
+            });
+
+            fridaClient = await connect();
+            const { session } = await fridaClient.attachToProcess(childProc.pid!);
+
+            // Without this, the loop process will run forever
+            await session.kill();
+
+            const { exitCode, signal } = await outputPromise;
+
+            expect(exitCode).to.equal(null);
+            expect(signal).to.equal("SIGKILL");
+        });
     }
 
 })
