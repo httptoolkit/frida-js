@@ -66,6 +66,7 @@ interface HostSession {
         stdio: number,
         aux: []
     ]): Promise<number>;
+    Resume(pid: number): Promise<void>;
 }
 
 interface AgentSession {
@@ -223,12 +224,14 @@ export class FridaSession {
     }
 
     async spawnWithScript(command: string, args: string[] | undefined, fridaScript: string) {
-        const hostSession: any = await this.getHostSession();
+        const hostSession = await this.getHostSession();
+
+        const argOptions: [boolean, Array<string>] = args
+            ? [true, [command, ...args]]
+            : [false, []];
 
         const pid = await hostSession.Spawn(command, [
-            ...(args
-                ? [true, [command, ...args]]
-                : [false, []]),
+            ...argOptions,
             false, [],
             false, [],
             "",
