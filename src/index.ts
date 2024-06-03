@@ -92,15 +92,21 @@ type AgentMessage = [kind: number, script_id: number[], text: string, has_data: 
  */
 export enum MessageType {
     Send = "send",
-    Error = "error"
+    Error = "error",
+    Log = "log"
 }
 
-export type Message = ScriptAgentSendMessage | ScriptAgentErrorMessage;
-export type ScriptAgentSendMessage = {
-    type: MessageType.Send,
-    payload: any
+export type Message =
+    | ScriptAgentSendMessage
+    | ScriptAgentErrorMessage
+    | ScriptAgentLogMessage;
+
+export interface ScriptAgentSendMessage {
+    type: MessageType.Send;
+    payload: any;
 }
-export type ScriptAgentErrorMessage = {
+
+export interface ScriptAgentErrorMessage {
     type: MessageType.Error;
     description: string;
     stack?: string;
@@ -108,6 +114,13 @@ export type ScriptAgentErrorMessage = {
     lineNumber?: number;
     columnNumber?: number;
 }
+
+export interface ScriptAgentLogMessage {
+    type: MessageType.Log,
+    level: string,
+    payload: string
+}
+
 enum AgentMessageKind {
     Script = 1,
     Debugger = 2,
