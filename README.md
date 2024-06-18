@@ -204,3 +204,10 @@ Using D-Bus from JavaScript is a little challenging, and normally requires nativ
 Once connected to D-Bus, the interfaces themselves are introspectable and the specific methods & signatures used by this project are explicitly listed in the code [here](https://github.com/httptoolkit/frida-js/blob/24552ab8676487995a37496581ee6bed6fe9d01a/src/index.ts#L36-L56). In general, the `HostSession` service provides the general purpose methods exposed by a Frida instance, such as launching processes or attaching to existing processes, while `AgentSession` is used for methods on an process once it has been launched, such as launching hook scripts to modify the target process.
 
 All put together: this library connects via WebSocket, uses our dbus-native fork to negotiate a D-Bus session, calls HostSession methods to launch or attach to a target, and then calls AgentSession methods for the created target session to inject code directly into that process. All pure JS, all independent of platform, runtime & local/remote connectivity.
+
+---
+
+This library is part of [a broader HTTP Toolkit project](https://httptoolkit.com/blog/frida-mobile-interception-funding/), funded through the [NGI Zero Entrust Fund](https://nlnet.nl/entrust), established by [NLnet](https://nlnet.nl) with financial support from the European Commission's [Next Generation Internet](https://ngi.eu) program. Learn more on the [NLnet project page](https://nlnet.nl/project/F3-AppInterception#ack).
+
+[<img src="https://nlnet.nl/logo/banner.png" alt="NLnet foundation logo" width="20%" />](https://nlnet.nl)
+[<img src="https://nlnet.nl/image/logos/NGI0Entrust_tag.svg" alt="NGI Zero Entrust Logo" width="20%" />](https://nlnet.nl/entrust)
