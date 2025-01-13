@@ -139,10 +139,16 @@ export class FridaSession {
         return this.bus.disconnect();
     }
 
-    private getHostSession() {
-        return this.bus
-        .getService('re.frida.HostSession16')
-        .getInterface<HostSession>('/re/frida/HostSession', 're.frida.HostSession16');
+    private async getHostSession() {
+        const hostSession = await this.bus
+            .getService('re.frida.HostSession16')
+            .getInterface<HostSession | undefined>('/re/frida/HostSession', 're.frida.HostSession16');
+
+        if (!hostSession) {
+            throw new Error('Frida host does not support v16 API');
+        }
+
+        return hostSession;
     }
 
     private async getAgentSession(sessionId: string, pid: number, hostSession: HostSession) {
