@@ -206,6 +206,167 @@ describe("Frida-JS", () => {
         }]);
     });
 
+    it("can send a simple message to the script", async () => {
+        const pingPayload = 'ping';
+        const pongPayload = 'pong';
+
+        fridaClient = await connect();
+        const { session, script } = await fridaClient.spawnWithScript(
+            path.join(FIXTURES_BASE, `serve-${process.platform}-${process.arch}`),
+            [],
+            `
+                recv(m => {
+                    if (m === '${pingPayload}') {
+                        send('${pongPayload}');
+                    }
+                });
+            `,
+        );
+
+        await delay(100); // Wait momentarily for the script to load and for the server to start listening
+
+        const messagePromise = new Promise<Message | null>((resolve, reject) => {
+            session.onMessage(resolve);
+            setTimeout(() => {
+                reject(new Error('Timed out waiting for message'));
+            }, 1000);
+        });
+        await script.post(pingPayload);
+        const message = await messagePromise;
+
+        await fetch('http://127.0.0.1:3000'); // Fetch triggers shutdown
+
+        expect(message).to.deep.equal({
+            type: 'send',
+            payload: pongPayload
+        });
+    });
+
+    it("can send a typed message to the script", async () => {
+        const messageType = 123;
+        const pingPayload = 'ping';
+        const pongPayload = 'pong';
+
+        fridaClient = await connect();
+        const { session, script } = await fridaClient.spawnWithScript(
+            path.join(FIXTURES_BASE, `serve-${process.platform}-${process.arch}`),
+            [],
+            `
+                recv(${messageType}, m => {
+                    if (m.msg === '${pingPayload}') {
+                        send('${pongPayload}')
+                    }
+                })
+            `,
+        );
+
+        await delay(100); // Wait momentarily for the script to load and for the server to start listening
+
+        const messagePromise = new Promise<Message | null>((resolve, reject) => {
+            session.onMessage(resolve);
+            setTimeout(() => {
+                reject(new Error('Timed out waiting for message'));
+            }, 1000);
+        });
+        await script.post({type: messageType, msg: pingPayload});
+        const message = await messagePromise;
+
+        await fetch('http://127.0.0.1:3000'); // Fetch triggers shutdown
+
+        expect(message).to.deep.equal({
+            type: 'send',
+            payload: pongPayload
+        });
+    });
+
+    it("can send binary data to the script", async () => {
+        const binaryData = [0x62, 0x75, 0x66, 0x66, 0x65, 0x72]; // "buffer"
+        const okPayload = 'ok';
+
+        fridaClient = await connect();
+        const { session, script } = await fridaClient.spawnWithScript(
+            path.join(FIXTURES_BASE, `serve-${process.platform}-${process.arch}`),
+            [],
+            `
+                const expectedLength = ${binaryData.length};
+                const expectedBytes = JSON.parse('${JSON.stringify(binaryData)}');
+                recv((_, binaryData) => {
+                    if (binaryData.byteLength !== expectedLength) {
+                        send('wrong byteLength: ' + binaryData.byteLength + ' !== ' + expectedLength);
+                        return;
+                    }
+                    const byteArray = new Uint8Array(binaryData);
+                    const wrongValueIdx = expectedBytes.findIndex((expectedValue, idx) => byteArray[idx] !== expectedValue);
+                    if (wrongValueIdx === -1) {
+                        send('${okPayload}');
+                    } else {
+                        send('wrong value at index ' + wrongValueIdx + ': ' + byteArray[wrongValueIdx] + ' !== ' + expectedBytes[wrongValueIdx]);
+                    }
+                })
+            `,
+        );
+
+        await delay(100); // Wait momentarily for the script to load and for the server to start listening
+
+        const messagePromise = new Promise<Message | null>((resolve, reject) => {
+            session.onMessage(resolve);
+            setTimeout(() => {
+                reject(new Error('Timed out waiting for message'));
+            }, 1000);
+        });
+        await script.post('', Buffer.from(binaryData));
+        const message = await messagePromise;
+
+        await fetch('http://127.0.0.1:3000'); // Fetch triggers shutdown
+
+        expect(message).to.deep.equal({
+            type: 'send',
+            payload: okPayload
+        });
+    });
+
+    it("can send multiple messages to the script", async () => {
+        const messagePayloads = ['A', 'B', 'C'];
+        const expectedMessages = messagePayloads.map(payload => ({type: 'send', payload}));
+
+        fridaClient = await connect();
+        const { session, script } = await fridaClient.spawnWithScript(
+            path.join(FIXTURES_BASE, `serve-${process.platform}-${process.arch}`),
+            [],
+            `
+                const msgHandler = m => {
+                    send(m);
+                    recv(msgHandler);
+                };
+                recv(msgHandler);
+            `,
+        );
+
+        await delay(100); // Wait momentarily for the script to load and for the server to start listening
+
+        const receivedMessagesPromise = new Promise<Message[]>((resolve, reject) => {
+            const receivedPayloads: Message[] = [];
+            session.onMessage((msg) => {
+                if (receivedPayloads.push(msg) === messagePayloads.length) {
+                    resolve(receivedPayloads);
+                }
+            });
+            setTimeout(() => {
+                reject(new Error('Timed out waiting for messages'));
+            }, 1000);
+        });
+
+        for (const payload of messagePayloads) {
+            await script.post(payload);
+        }
+
+        const receivedMessages = await receivedMessagesPromise;
+
+        await fetch('http://127.0.0.1:3000'); // Fetch triggers shutdown
+
+        expect(receivedMessages).to.deep.equal(expectedMessages);
+    });
+
     if (isNode) {
         it("can connect to a Frida instance by raw stream", async () => {
             const socket = net.createConnection({
