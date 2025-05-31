@@ -11,13 +11,13 @@ import {
 } from './run-frida-server';
 
 import {
-    getFridaReleaseDetails,
     downloadFridaServer
 } from '../src/index';
 
 const canAccess = (path: string) => fs.access(path).then(() => true).catch(() => false);
 
 const FRIDA_DOWNLOAD_METADATA = path.join(FRIDA_SERVER_DIR, 'metadata.json');
+const FRIDA_TEST_VERSION = '16.7.19'; // Currently the latest v16 release
 
 async function setUpLocalEnv() {
     const serverExists = await canAccess(FRIDA_DOWNLOAD_METADATA);
@@ -26,10 +26,7 @@ async function setUpLocalEnv() {
         : null;
 
     try {
-        const latestServerDetails = await getFridaReleaseDetails('latest', process.env.GITHUB_TOKEN);
-        const latestServerVersion: string = latestServerDetails.tag_name;
-
-        if (!serverExists || semver.gt(latestServerVersion, currentServerVersion)) {
+        if (!serverExists || semver.gt(FRIDA_TEST_VERSION, currentServerVersion)) {
             // Remove any existing binary:
             await fs.unlink(FRIDA_SERVER_BIN).catch((e: any) => {
                 if (e.code === 'ENOENT') return;
@@ -38,7 +35,7 @@ async function setUpLocalEnv() {
 
             await fs.mkdir(FRIDA_SERVER_DIR, { recursive: true });
 
-            const fridaStream = await downloadFridaServer({ version: latestServerVersion });
+            const fridaStream = await downloadFridaServer({ version: FRIDA_TEST_VERSION });
             await pipeline(fridaStream, createWriteStream(FRIDA_SERVER_BIN));
 
             await Promise.all([
@@ -46,7 +43,7 @@ async function setUpLocalEnv() {
                 fs.chmod(FRIDA_SERVER_BIN, 0o755),
                 // Update metadata, recording which version we downloaded
                 fs.writeFile(FRIDA_DOWNLOAD_METADATA, JSON.stringify({
-                    version: latestServerDetails.tag_name
+                    version: FRIDA_TEST_VERSION
                 }))
             ]);
 

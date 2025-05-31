@@ -25,7 +25,7 @@ if (isNode) {
                 fs.createWriteStream(tmpFile.path)
             );
 
-            await new Promise((resolve, reject) => {
+            await new Promise<void>((resolve, reject) => {
                 writeStream.on('finish', resolve);
                 writeStream.on('error', reject);
             });
@@ -58,7 +58,7 @@ if (isNode) {
             });
 
             setImmediate(() => fridaServerStream.resume());
-            const streamResult: any = await new Promise((resolve, reject) => {
+            const streamResult: any = await new Promise<void>((resolve, reject) => {
                 fridaServerStream.on('end', () => reject(new Error('Stream unexpectedly ended OK')));
                 fridaServerStream.on('error', resolve);
             });
@@ -86,7 +86,7 @@ if (isNode) {
                 fs.createWriteStream(tmpFile.path)
             );
 
-            const streamResult: any = await new Promise((resolve, reject) => {
+            const streamResult: any = await new Promise<void>((resolve, reject) => {
                 fridaServerStream.on('error', reject);
                 writeStream.on('error', reject);
                 writeStream.on('finish', resolve);
