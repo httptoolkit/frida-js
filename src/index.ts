@@ -73,6 +73,7 @@ interface HostSession {
 interface AgentSession {
     CreateScript(script: string, options: {}): Promise<[number]>;
     LoadScript(scriptId: [number]): Promise<void>;
+    PostMessages(messages: [AgentMessage], batchId: number): Promise<void>;
 }
 
 /**
@@ -342,6 +343,8 @@ export class FridaAgentSession {
     }
 }
 
+const ZERO_LENGTH_BUFFER = Buffer.alloc(0);
+
 export class FridaScript {
     constructor(
         private bus: dbus.DBusClient,
@@ -355,5 +358,23 @@ export class FridaScript {
      */
     async loadScript() {
         return this.agentSession.LoadScript(this.scriptId);
+    }
+
+    /**
+     * Send a message to the script.
+     * @param message - The message object to send, will be JSON stringified.
+     * @param data - Optional binary data to send along with the message.
+     * @returns Promise that resolves when the message is posted.
+     */
+    async post(message: any, data?: Buffer | null): Promise<void> {
+        return this.agentSession.PostMessages([
+            [
+                AgentMessageKind.Script,
+                this.scriptId,
+                JSON.stringify(message),
+                data != null,
+                data ?? ZERO_LENGTH_BUFFER,
+            ]
+        ], 0);
     }
 }
