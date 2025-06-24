@@ -18,6 +18,30 @@ const FIXTURES_BASE = isNode
     ? path.join(__dirname, 'fixtures')
     : process.env.FIXTURES_PATH!;
 
+function checkYamaPtraceScope() {
+    let result: string;
+    try {
+        result = ChildProc.execSync('sysctl kernel.yama.ptrace_scope').toString().trim();
+    } catch (e) {
+        console.warn(`Failed to check ptrace_scope value: ${e}`);
+        return;
+    }
+
+    if (result === 'kernel.yama.ptrace_scope = 0') {
+        return; // Perfect!
+    } else if (result === 'kernel.yama.ptrace_scope = 1') {
+        console.error(
+            'Yama ptrace scope is set to 1, which will prevent Frida from attaching to processes. ' +
+            'You can change this by running:\n> sudo sysctl kernel.yama.ptrace_scope=0'
+        );
+        process.exit(1);
+    } else {
+        console.warn(`Unexpected ptrace_scope value: ${result}`);
+    }
+}
+
+if (isNode && process.platform === 'linux') checkYamaPtraceScope();
+
 describe("Frida-JS", () => {
 
     let fridaClient: FridaSession;
