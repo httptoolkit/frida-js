@@ -17,7 +17,7 @@ import {
 const canAccess = (path: string) => fs.access(path).then(() => true).catch(() => false);
 
 const FRIDA_DOWNLOAD_METADATA = path.join(FRIDA_SERVER_DIR, 'metadata.json');
-const FRIDA_TEST_VERSION = '16.7.19'; // Currently the latest v16 release
+const FRIDA_TEST_VERSION = '17.2.5'; // Currently the latest v17 release
 
 async function setUpLocalEnv() {
     const serverExists = await canAccess(FRIDA_DOWNLOAD_METADATA);

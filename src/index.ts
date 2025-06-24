@@ -127,6 +127,8 @@ enum AgentMessageKind {
     Debugger = 2,
 }
 
+const SUPPORTED_API_VERSIONS = ['17', '16'];
+
 export class FridaSession {
 
     constructor(
@@ -141,22 +143,31 @@ export class FridaSession {
     }
 
     private async getHostSession() {
-        const hostSession = await this.bus
-            .getService('re.frida.HostSession16')
-            .getInterface<HostSession | undefined>('/re/frida/HostSession', 're.frida.HostSession16');
+        for (let version of SUPPORTED_API_VERSIONS) {
+            const hostSession = await this.bus
+                .getService(`re.frida.HostSession${version}`)
+                .getInterface<HostSession | undefined>('/re/frida/HostSession', `re.frida.HostSession${version}`);
 
-        if (!hostSession) {
-            throw new Error('Frida host does not support v16 API');
+            if (hostSession) {
+                return hostSession;
+            }
         }
 
-        return hostSession;
+        throw new Error('Could not create Frida host session (Unsupported API version?)');
     }
 
     private async getAgentSession(sessionId: string, pid: number, hostSession: HostSession) {
-        const agentSession = await this.bus
-            .getService('re.frida.AgentSession16')
-            .getInterface<AgentSession>('/re/frida/AgentSession/' + sessionId, 're.frida.AgentSession16');
-        return new FridaAgentSession(this.bus, hostSession, pid, sessionId, agentSession);
+        for (let version of SUPPORTED_API_VERSIONS) {
+            const agentSession = await this.bus
+                .getService(`re.frida.AgentSession${version}`)
+                .getInterface<AgentSession>('/re/frida/AgentSession/' + sessionId, `re.frida.AgentSession${version}`);
+
+            if (agentSession) {
+                return new FridaAgentSession(this.bus, version, hostSession, pid, sessionId, agentSession);
+            }
+        }
+
+        throw new Error('Could not create Frida agent session (Unsupported API version?)');
     }
 
     /**
@@ -301,6 +312,7 @@ export class FridaSession {
 export class FridaAgentSession {
     constructor(
         private bus: dbus.DBusClient,
+        private hostVersion: string,
         private hostSession: HostSession,
         private pid: number,
         private sessionId: string,
@@ -312,16 +324,21 @@ export class FridaAgentSession {
      * @param cb Callback to be called when a message is received from the agent.
      */
     onMessage(cb: (message: Message) => void) {
-        this.bus.setMethodCallHandler(`/re/frida/AgentMessageSink/${this.sessionId}`, "re.frida.AgentMessageSink16", "PostMessages", [(messages: AgentMessage[]) => {
-            for(const message of messages) {
-                const msg = JSON.parse(message[2]) as Message;
-                switch(message[0]) { // message[0] is the message kind
-                    case AgentMessageKind.Script:
-                        cb(msg)
-                        break;
+        this.bus.setMethodCallHandler(
+            `/re/frida/AgentMessageSink/${this.sessionId}`,
+            `re.frida.AgentMessageSink${this.hostVersion}`,
+            "PostMessages",
+            [(messages: AgentMessage[]) => {
+                for(const message of messages) {
+                    const msg = JSON.parse(message[2]) as Message;
+                    switch(message[0]) { // message[0] is the message kind
+                        case AgentMessageKind.Script:
+                            cb(msg)
+                            break;
+                    }
                 }
-            }
-        }, null]);
+            }, null]
+        );
     }
 
     /**
